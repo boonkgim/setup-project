@@ -14,6 +14,11 @@ It is built on my 19 years of experience shipping web apps, then argued into sha
 three weeks and two real repos, one correction at a time.
 [Read the prompts that shaped it](docs/prompt-history.md) before you install anything.
 
+> [!NOTE]
+> **This stack suits a CRUD app with average traffic**, which is the majority of use cases.
+> If you want to build a web app with high scalability, or a different shape entirely, ping
+> me on [LinkedIn](https://www.linkedin.com/in/boonkgim).
+
 ## The stack
 
 An opinionated stack, curated by me, and fixed.
