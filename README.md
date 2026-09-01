@@ -26,6 +26,7 @@ An opinionated stack, curated by me, and fixed.
 | Layer            | What it uses                                             | Worth knowing                                                       |
 | ---------------- | -------------------------------------------------------- | -------------------------------------------------------------------- |
 | **Monorepo**     | pnpm workspaces + turbo                                  | `catalog:` pins, so one version of a dependency across every package |
+| **Runtime**      | Node 24+, pnpm via corepack, workerd through wrangler    | everything server-side runs on workerd, not Node                      |
 | **Quality**      | TypeScript, ESLint, Prettier, Vitest, turbo              | plus `docs:check`, which fails when the plan and the repo disagree    |
 | **Web**          | Next.js (App Router) on Cloudflare Workers via OpenNext  | Workers, not Vercel. `wrangler` deploys it                           |
 | **API**          | GraphQL Yoga on its own Worker                           | graphql-codegen server preset, typed client, service binding from web |
@@ -34,7 +35,6 @@ An opinionated stack, curated by me, and fixed.
 | **Email**        | React Email + Resend *(optional)*                        | a `log` transport locally, real delivery in production                |
 | **Auth**         | Better Auth, magic link *(optional)*                     | no password field and no password column, by default                 |
 | **Payments**     | Stripe embedded Checkout *(optional)*                    | signed webhook, idempotent on Stripe's event id                       |
-| **Runtime**      | Node 24+, pnpm via corepack, workerd through wrangler    | everything server-side runs on workerd, not Node                      |
 
 Want a different stack? Fork this skill and edit the slices.
 [`reference/adapting.md`](reference/adapting.md) documents how they were made
