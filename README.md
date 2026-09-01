@@ -3,29 +3,25 @@
 **Every setup guide is stale by the time you run it. This one checks itself against reality
 first, then rewrites itself with what actually worked.**
 
-An [agent skill](https://agentskills.io) for Claude Code, Codex, and any other AI coding
-agent that reads `SKILL.md`. It scaffolds a full-stack web app on **Next.js + GraphQL +
-Postgres, deployed to Cloudflare Workers**, one infrastructure slice at a time, and every
-slice runs the same loop:
+An [agent skill](https://agentskills.io) that scaffolds a production-grade full-stack web
+app on **Next.js, GraphQL and Postgres, deployed to Cloudflare Workers**, one
+infrastructure slice at a time. Each slice is researched against current docs, planned into
+your repo, executed, then proven locally and in production before anything moves on.
 
-```
-reference → research → wire → plan → execute → local gate → reconcile
-          → production gate → reconcile → your manual steps → commit
-```
+Works in Claude Code, Codex, and any other AI coding agent that reads `SKILL.md`.
 
-This skill was argued into shape over three weeks and two real repos, one correction at a
-time. [Read the prompts that shaped it](docs/prompt-history.md) before you install
-anything.
+It is built on my 19 years of experience shipping web apps, then argued into shape over
+three weeks and two real repos, one correction at a time.
+[Read the prompts that shaped it](docs/prompt-history.md) before you install anything.
 
 ## The stack
 
-It is fixed, and it is one stack rather than a menu. These pieces were verified as a set,
-which is the only reason the slices can promise anything: the traps that cost real time are
-usually in the seams between two of them, not inside either one.
+An opinionated stack, curated by me, and fixed.
 
 | Layer            | What it uses                                             | Worth knowing                                                       |
 | ---------------- | -------------------------------------------------------- | -------------------------------------------------------------------- |
 | **Monorepo**     | pnpm workspaces + turbo                                  | `catalog:` pins, so one version of a dependency across every package |
+| **Quality**      | TypeScript, ESLint, Prettier, Vitest, turbo              | plus `docs:check`, which fails when the plan and the repo disagree    |
 | **Web**          | Next.js (App Router) on Cloudflare Workers via OpenNext  | Workers, not Vercel. `wrangler` deploys it                           |
 | **API**          | GraphQL Yoga on its own Worker                           | graphql-codegen server preset, typed client, service binding from web |
 | **Database**     | Drizzle ORM + Postgres                                   | Docker locally, Neon through Cloudflare Hyperdrive in production     |
@@ -33,10 +29,13 @@ usually in the seams between two of them, not inside either one.
 | **Email**        | React Email + Resend *(optional)*                        | a `log` transport locally, real delivery in production                |
 | **Auth**         | Better Auth, magic link *(optional)*                     | no password field and no password column, by default                 |
 | **Payments**     | Stripe embedded Checkout *(optional)*                    | signed webhook, idempotent on Stripe's event id                       |
-| **Quality**      | TypeScript, ESLint, Prettier, Vitest, turbo              | plus `docs:check`, which fails when the plan and the repo disagree    |
 | **Runtime**      | Node 24+, pnpm via corepack, workerd through wrangler    | everything server-side runs on workerd, not Node                      |
 
-If you want a different stack, this skill will say so plainly rather than improvise one.
+Want a different stack? Fork this skill and edit the slices.
+[`reference/adapting.md`](reference/adapting.md) documents how they were made
+project-agnostic and which rules they depend on. What the skill will not do is improvise a
+substitution mid-run: ask it for Vercel or Prisma and it says so plainly instead of
+guessing.
 
 ## Why you would want this
 
@@ -157,7 +156,13 @@ Where an agent is not listed with a path, check its own docs for the skills dire
 /setup-project auth      # names work too
 ```
 
-One slice per invocation. It stops when that slice is committed.
+One slice per invocation, through the same fixed loop every time. It stops when that slice
+is committed.
+
+```
+reference → research → wire → plan → execute → local gate → reconcile
+          → production gate → reconcile → your manual steps → commit
+```
 
 With no argument it lists every slice, marks which ones your `docs/setup/` shows as built,
 recommends one, and waits for your confirmation. There is no separate state file to keep in
@@ -197,8 +202,8 @@ has to look right.
 ## When not to use this
 
 - **The stack is not a menu.** These slices are one stack that was verified as a set. If
-  you want Vercel, Prisma, or tRPC, this is the wrong skill and it will say so rather than
-  improvise.
+  you want Vercel, Prisma, or tRPC, fork it and rewrite the slices, or use something else.
+  It will not swap a layer out on request.
 - **It is not fast.** Research, gates and reconciliation on every slice is the whole point,
   and it is slower than accepting a generator's output.
 - **It does not design your product.** No schema, no features, no business logic. It builds
