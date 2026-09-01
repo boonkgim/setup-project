@@ -213,7 +213,7 @@ proved the docs could be lifted out of the app, which is exactly what happened n
 
 ### The ask
 
-> `/home/boonkgim/Desktop/repos/nanostore/docs/2026-08-08-setup` this folder contains guide
+> `~/repos/nanostore/docs/2026-08-08-setup` this folder contains guide
 > to setup horizontal slices for a web app... can you create a master `/setup-project` skill
 > in this project that allow us to choose what slice we need, then the project accordingly?
 > the skill should be self-contained and project agnostic... so copy things from nanostore

@@ -1,6 +1,7 @@
 ---
 name: setup-project
 description: Scaffold a full-stack web app one infrastructure slice at a time — pnpm workspace, Next.js on Cloudflare Workers via OpenNext, a GraphQL Yoga Worker, Drizzle + Postgres (Docker locally, Neon via Hyperdrive), a theming system, optional email, authentication and Stripe payments, and a re-runnable audit of what the setup left exposed. Use when starting a new project, adding one of those layers to a project already built this way, or when the user asks to set up the workspace, the API, the database, auth, email or payments. Invoke as /setup-project [slice] — it researches what is currently true, writes that slice's execution plan into the project, proves it locally then in production — correcting both the plan and this skill after each — and ends by handing you the short list of checks only a person can make.
+license: MIT
 ---
 
 # Set up a project, slice by slice
@@ -181,9 +182,13 @@ about what will replace it, and whichever slice supersedes it retires it.
 ## 4. Write the execution plan into the project
 
 ```bash
-node .claude/skills/setup-project/scripts/install-plan.mjs \
+node <skill dir>/scripts/install-plan.mjs \
   --repo <repo dir> --name <project> --slices NN
 ```
+
+`<skill dir>` is wherever this skill is installed: `~/.claude/skills/setup-project`,
+`~/.agents/skills/setup-project`, or a project's own `.claude/skills/setup-project`. The
+script resolves its slices relative to itself, so it runs correctly from any of them.
 
 That renders `slices/NN-*.md` into `docs/setup/` with `__PROJECT__` and `__DOCS__` resolved,
 and writes nothing else — no index, no source list. `docs/setup/` holds slice files only, one
