@@ -4,22 +4,39 @@
 first, then rewrites itself with what actually worked.**
 
 An [agent skill](https://agentskills.io) for Claude Code, Codex, and any other AI coding
-agent that reads `SKILL.md`. It scaffolds a full-stack web app **one infrastructure slice
-at a time**, and each slice runs the same loop:
+agent that reads `SKILL.md`. It scaffolds a full-stack web app on **Next.js + GraphQL +
+Postgres, deployed to Cloudflare Workers**, one infrastructure slice at a time, and every
+slice runs the same loop:
 
 ```
 reference → research → wire → plan → execute → local gate → reconcile
           → production gate → reconcile → your manual steps → commit
 ```
 
-The stack is fixed and was verified as a set: **pnpm workspace · Next.js on Cloudflare
-Workers via OpenNext · GraphQL Yoga Worker · Drizzle + Postgres (Docker locally, Neon
-through Hyperdrive in production) · Tailwind + shadcn**, then optionally Resend, Better
-Auth and Stripe.
-
 This skill was argued into shape over three weeks and two real repos, one correction at a
 time. [Read the prompts that shaped it](docs/prompt-history.md) before you install
 anything.
+
+## The stack
+
+It is fixed, and it is one stack rather than a menu. These pieces were verified as a set,
+which is the only reason the slices can promise anything: the traps that cost real time are
+usually in the seams between two of them, not inside either one.
+
+| Layer            | What it uses                                             | Worth knowing                                                       |
+| ---------------- | -------------------------------------------------------- | -------------------------------------------------------------------- |
+| **Monorepo**     | pnpm workspaces + turbo                                  | `catalog:` pins, so one version of a dependency across every package |
+| **Web**          | Next.js (App Router) on Cloudflare Workers via OpenNext  | Workers, not Vercel. `wrangler` deploys it                           |
+| **API**          | GraphQL Yoga on its own Worker                           | graphql-codegen server preset, typed client, service binding from web |
+| **Database**     | Drizzle ORM + Postgres                                   | Docker locally, Neon through Cloudflare Hyperdrive in production     |
+| **UI**           | Tailwind + shadcn/ui                                     | every token in one `theme.css`, dark mode, no component names a colour |
+| **Email**        | React Email + Resend *(optional)*                        | a `log` transport locally, real delivery in production                |
+| **Auth**         | Better Auth, magic link *(optional)*                     | no password field and no password column, by default                 |
+| **Payments**     | Stripe embedded Checkout *(optional)*                    | signed webhook, idempotent on Stripe's event id                       |
+| **Quality**      | TypeScript, ESLint, Prettier, Vitest, turbo              | plus `docs:check`, which fails when the plan and the repo disagree    |
+| **Runtime**      | Node 24+, pnpm via corepack, workerd through wrangler    | everything server-side runs on workerd, not Node                      |
+
+If you want a different stack, this skill will say so plainly rather than improvise one.
 
 ## Why you would want this
 
@@ -48,21 +65,42 @@ The version numbers in the reference rot. The reasoning does not: the `devEngine
 `pnpm init` writes that corepack then rejects, the second `create-next-app` in a pnpm
 workspace that quietly opens its own workspace root inside `apps/web`. That is the payload.
 
-## What it builds
+## The slices
 
-| Slice | Builds                                                          |
-| ----- | --------------------------------------------------------------- |
-| 00    | pnpm workspace, catalog pins, turbo, prettier/ESLint/vitest, `docs:check` |
-| 01    | `apps/web` on Cloudflare Workers via OpenNext, deployed         |
-| 02    | `apps/graphql` Yoga Worker, codegen, typed client, service binding |
-| 03    | `packages/db` with Drizzle, Postgres in Docker, Neon + Hyperdrive |
-| 04    | Tailwind, shadcn, and a theme you can re-skin from one file     |
-| 05    | `packages/email` with React Email and Resend                    |
-| 06    | Better Auth, magic-link sign-in, sessions                       |
-| 07    | Stripe embedded Checkout and a signed, idempotent webhook       |
-| 99    | A re-runnable audit of what the setup itself left exposed       |
+Eight build slices plus an audit, one per invocation, in order. Each ends at a green gate,
+locally and (from 01 on) in production, which is what makes every one of them a place you
+can legitimately stop.
 
-Slice 99 is not a rung of the chain. It builds nothing, reads whatever exists, and reports.
+| #      | Slice                    | What lands in the repo                                                                                                                             | Needs             |
+| ------ | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| **00** | Workspace foundation     | pnpm workspace, `catalog:` pins, turbo, Prettier + ESLint + Vitest, `packages/config`, the env-file convention, the first `CLAUDE.md`, `docs:check` | Node 24+, pnpm    |
+| **01** | Web shell, deployed      | `apps/web` from `create-next-app`, the OpenNext Cloudflare adapter, `wrangler.jsonc`, the first real unit test, a live `*.workers.dev` URL         | Cloudflare        |
+| **02** | GraphQL                  | `apps/graphql` on workerd, modular SDL, codegen'd resolvers, the typed client in `apps/web`, the service binding, CORS allowlist                    | Cloudflare        |
+| **03** | Database                 | `packages/db` (Drizzle schema, migrations, client factory), `docker-compose.yml`, the Hyperdrive binding, the first integration tests               | Docker, Neon      |
+| **04** | Theming system           | Tailwind, the shadcn registry, and `theme.css`: every token value in one file, dark mode, with a test asserting the theme contract                  | nothing new       |
+| **05** | Email                    | `packages/email` (React Email templates, a `log` transport and a `resend` one), the send mutation, a recipient allowlist                            | Resend            |
+| **06** | Authentication           | Better Auth mounted before Yoga, generated auth tables, the same-origin `/api/auth/[...all]` proxy, a sign-in panel, a `viewer` field               | Resend (05)       |
+| **07** | Payments                 | Embedded Checkout from the API, the form in `apps/web`, the signed webhook at `/stripe/webhook`, a `stripe_event` table for idempotency             | Stripe + CLI      |
+| **99** | Security audit           | A report: what the setup itself left exposed, who can reach it, why it is there, and at least two options each. Changes nothing                     | nothing new       |
+
+**00 through 04 is the scaffold.** 05, 06 and 07 are optional infrastructure on top of it,
+and each is a hard prerequisite for the next: magic-link sign-in is delivered by email, so
+06 genuinely needs 05, and 07 patches files 06 wrote.
+
+| Stop at | You have                                                          |
+| ------- | ------------------------------------------------------------------ |
+| 04      | the scaffold: deployed web + API + database + theming system       |
+| 05      | plus transactional email                                           |
+| 06      | plus accounts, magic-link sign-in, sessions                        |
+| 07      | plus Stripe embedded Checkout and a signed webhook                 |
+
+**99 is not a rung of the chain.** It builds nothing, needs only slice 00, and reads
+whatever exists, so it is re-runnable at any point and never counts as "the next slice".
+Run it after anything that adds public surface. The number is 99 and not 08 so that the
+filename says as much.
+
+[`reference/slices.md`](reference/slices.md) has the full entry for each one: what its gate
+proves, which account it needs, and the specific traps it carries.
 
 ## Install
 
