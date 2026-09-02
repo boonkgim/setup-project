@@ -44,10 +44,14 @@ guessing.
 
 ## Why you would want this
 
-Scaffolding is not the hard part. Anyone can run `create-next-app`. The hard part is that
-the twelve tools underneath it move independently, and the guide you wrote in August fails
-in September for reasons that have nothing to do with your app. Three things this does
-about that:
+The quick way to set up a web app is to grab a template. But templates are rigid. One is
+missing a layer you need, the next carries three you do not, and trimming either back is
+work you did not sign up for. They also go stale fast: a template is a snapshot of a dozen
+components that move independently, and keeping all of them current is difficult.
+
+This is that idea unbundled. You take the slices you want, in the order you want them, and
+each one is checked against reality on the day you run it rather than the day it was
+published. Three things follow:
 
 - **It never trusts its own pins.** Before writing a single command into your repo, the
   skill checks `npm view` and the vendor's current docs for every tool the slice touches,
@@ -192,12 +196,13 @@ If this is useful, a ⭐ helps other people find it.
 
 ## Why not just use a template?
 
-A template hands you a working repo you did not build, pinned to the day it was published.
-When something in it breaks, you are debugging a stranger's choices with no record of why
-any of them were made. This does the opposite: it writes the plan into **your** repo, as
-prose you can read, and then corrects that prose against what actually happened. What you
-end up with is a scaffold plus the reasoning behind every line of it, checked by
-`pnpm docs:check` so the plan and the repo cannot silently drift apart.
+Beyond rigid and stale, there is a third cost: a template hands you a working repo you did
+not build. When something in it breaks, you are debugging a stranger's choices with no
+record of why any of them were made. This does the opposite. It writes the plan into
+**your** repo, as prose you can read, then corrects that prose against what actually
+happened when you ran it. What you end up with is a scaffold plus the reasoning behind
+every line of it, checked by `pnpm docs:check` so the plan and the repo cannot silently
+drift apart.
 
 The other difference is where it stops. A generator finishes when files exist. This
 finishes when the gates are green in production and you have been handed the short numbered
