@@ -2056,14 +2056,12 @@ The `web` skill defers to it, because a component is where the rules get reached
  - **No component ever names a colour.** Semantic tokens only: `bg-background`,
 ```
 
-## Sources and findings
+## Sources
 
-The documentation this slice's §3 research rests on, and what running it actually turned up —
-kept here rather than in a shared bibliography so that reading the slice is reading its
-evidence. **Every version and claim below is dated.** A pin is only as good as its date;
-re-check rather than inherit, and add a dated entry when you do (SKILL.md §7).
-
-### Sources
+The documentation this slice's §3 research rests on — kept here rather than in a shared
+bibliography, so that reading the slice is reading its evidence. **Re-check rather than
+inherit:** a source is only as good as the day it was read, and the version pins in this slice
+are claims about a registry that moves. `changelog/` records what changed here and why.
 
 - [Better Auth installation](https://www.better-auth.com/docs/installation)
 - [Better Auth magic link plugin](https://www.better-auth.com/docs/plugins/magic-link) — `sendMagicLink`, `expiresIn`, `storeToken`, `disableSignUp`, and the `/magic-link/verify` route
@@ -2074,85 +2072,6 @@ re-check rather than inherit, and add a dated entry when you do (SKILL.md §7).
 - [Better Auth on Cloudflare Workers, via Hono](https://hono.dev/examples/better-auth-on-cloudflare) (the per-request `auth(env).handler(request)` shape)
 - [Public Suffix List](https://publicsuffix.org/) (why a cookie cannot span two `workers.dev` hosts)
 - [Service bindings](https://developers.cloudflare.com/workers/runtime-apis/bindings/service-bindings/) (what the auth proxy forwards over)
-
-### Findings
-
-**Executed once, on 2026-09-01.** The entries below separate what research established from
-what a run then proved or disproved.
-
-#### 2026-09-01 — first execution, Round 2 production (nanoapp)
-
-- **Deployed bundle: `gzip: 862.35 KiB`**, from Slice 5's 516 KiB — better-auth, its adapter
-  and the magic-link plugin cost roughly 346 KiB gzipped. About 28% of Cloudflare's 3 MiB.
-- **`trustedOrigins` works and is worth the row.** The API Worker's own
-  `/api/auth/sign-in/magic-link` answers `403 {"code":"INVALID_ORIGIN"}` to a foreign origin
-  and `200` to the web origin. That endpoint is publicly reachable, so this is the control.
-- **Following the link creates the `user` row with `email_verified: true`** — no separate
-  verification step ever runs, which is the design working rather than a shortcut.
-- **The clicked token is consumed atomically**, leaving the sibling token as the only row in
-  `verification`; the deprecated `allowedAttempts` note predicted exactly this.
-- **Every Better Auth timestamp column is `timestamp without time zone`** — see the new
-  `Leaves behind` row. It bites nothing in this slice and would bite a cleanup job.
-- **`wrangler secret put` takes no `--env-file`, and adding one is a mistake** — this slice's
-  step 1 is right as written. The flag only loads a dotenv file (typically for
-  `CLOUDFLARE_ACCOUNT_ID`); the secret value comes from the interactive prompt either way,
-  and adding it makes a gitignored file mandatory for an operation that does not need one —
-  the same trap Slice 2 documents for `cf-typegen`. `wrangler secret list` resolved the
-  right Worker with no flag at all.
-- **The production gate stalls on the secret, and that is the correct order.** The deployed
-  page queries `viewer`, whose resolver calls `requireEnv("BETTER_AUTH_SECRET")` — deploying
-  before the secret exists breaks every request on the live site rather than only sign-in.
-  Set the secret, then migrate, then deploy.
-
-#### 2026-09-01 — first execution, Round 1 local (nanoapp)
-
-- **`@better-auth/drizzle-adapter` must not be installed directly**, and the reference used
-  to say otherwise. `better-auth` depends on it at an exact pin and re-exports it verbatim;
-  a separate ranged entry is a second resolution that drifts. Import from
-  `better-auth/adapters/drizzle`. Typechecks clean, needs no `@better-auth/core` peer entry,
-  and leaves `apps/graphql` with no direct `drizzle-orm` dependency.
-- **`@better-auth/cli` is deprecated**; the CLI package is `auth`. Both were checked with
-  `npm view <pkg> deprecated`, which is the §3 step that catches exactly this.
-- **The magicLink plugin has a `rateLimit` option** the reference never mentioned, defaulting
-  to `{ window: 60, max: 5 }`. It does not retire the accepted risk — the counter is
-  in-memory, so per-isolate on Workers — but the ledger row was wrong to imply no limit
-  exists at all.
-- **`allowedAttempts` is deprecated**, and its note states tokens are consumed atomically on
-  first verification. The "spent link" test is therefore a library guarantee, not a guess.
-- **The narrower `SendMagicLink` alias needs no cast** — the open question from the rewrite,
-  now closed by `tsc`.
-- **The heredocs are not prettier-stable.** A long `expect(...)` chain in `auth.test.ts` was
-  reformatted on first contact and reported as drift.
-- **A stale `wrangler dev` silently moves the API to 8788** and the browser gate then drives
-  a Worker with no auth routes. Now warned about in the local-gate preamble.
-- **`WorkerEnv` does not carry `BETTER_AUTH_SECRET`** where `cf-typegen` runs without
-  `--env-file`, which is Slice 2's deliberate arrangement. The old claim to the contrary has
-  been removed.
-- **The generated `account` table has a nullable `password` column** even with no password
-  auth enabled — part of Better Auth's base schema. "No password column" was wrong and is
-  corrected; no password field, hash, or reset flow remains true.
-
-#### 2026-09-01 — rewritten around magic link (research only, unexecuted)
-
-- **`better-auth` and its two siblings resolve to 1.7.2**, up from the `^1.6.26` the
-  reference pinned. `npm view better-auth deprecated` is empty for all three. Verified with
-  `npm view`, not assumed.
-- **`magicLink` ships in core** — `better-auth/plugins` server-side,
-  `better-auth/client/plugins` for `magicLinkClient`. There is no separate package to
-  install, and the catalog gains no fourth entry for it.
-- **The plugin adds no table.** Its tokens go into the `verification` table Better Auth
-  already generates, so `auth:generate` still produces the same four tables and
-  `packages/db` needs no change beyond the one Slice 6 already made.
-- **Defaults read off the options table:** `expiresIn` 300s, `storeToken` `"plain"`,
-  `disableSignUp` `false`. This slice sets `expiresIn: 600` and leaves the other two.
-- **The verify route is `GET /magic-link/verify?token=…&callbackURL=…`**, under the
-  configured `basePath` — which is why `isAuthPath` gained a test for it.
-- **The docs do not state the `verification` row's shape** for magic link. That absence is
-  why `auth.int.test.ts` reads the link off the mail log rather than out of the table: a
-  test written against an unstated shape keeps compiling after the library changes it.
-- **Unverified and left for the first run:** every test count in the local gate, whether
-  `sendMagicLink`'s narrower parameter type is accepted without a cast, and whether the
-  heredocs are prettier-stable once `__PROJECT__` is substituted for a long project name.
 
 ## Leaves behind
 

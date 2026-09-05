@@ -260,38 +260,14 @@ Two orderings worth knowing, both established this way:
   it from the deployed URL and not from `createYoga`'s options — the finding is precisely
   that the option is absent.
 
-## Sources and findings
+## Sources
 
 The audit installs nothing, so it has no pins to verify. What it depends on is the behaviour
-of the tools it reads with, and the defaults of the stack it reads.
+of the tools it reads with, and the defaults of the stack it reads — so those are what this
+list covers, and what to re-check before trusting a finding. `changelog/` records what changed
+here and why.
 
 - pnpm CLI — `install --frozen-lockfile` on an up-to-date workspace, and what `audit --prod`
   covers: <https://pnpm.io/cli/install>, <https://pnpm.io/cli/audit>
 - GraphQL Yoga — `graphiql` and `maskedErrors` defaults: <https://the-guild.dev/graphql/yoga-server/docs>
 - Better Auth — `trustedOrigins`, magic-link `rateLimit` storage: <https://www.better-auth.com/docs>
-
-### 2026-09-01 — first execution (nanoapp, slices 00–07 built)
-
-- **`pnpm install --frozen-lockfile | rg deprecated` is vacuous on a warm store.** It printed
-  nothing, and `tail -5` showed why: `Already up to date`, 199ms, nothing re-resolved. The
-  registry loop above replaced it and found no deprecated direct dependency. This is the
-  single most likely way this slice reports a clean bill it did not earn.
-- **A dependency literally named `auth` is not a typosquat here.** `apps/graphql` devDepends
-  on `auth@catalog:` and it reads as one. `npm view auth repository.url` resolves to
-  `github.com/better-auth/better-auth`, directory `packages/cli` — it is Better Auth's own
-  CLI, published under the bare name, with `better-auth` and `auth` as its two bins. Check
-  the repository URL before writing the finding; a generic name is a prompt to verify, not
-  evidence.
-- **The credential regex drowns in `worker-env.d.ts`.** 20+ consecutive hits on generated
-  Workers AI interface names, above the real ones. Excluded in the command now.
-- **Both fail-open greps came back clean and the four `??` hits all fail closed** — two test
-  files defaulting `DATABASE_URL` to the Docker URL, plus `cors.ts` and `mail.ts`, which
-  return `false` and `[]`-refuses-everything respectively. The pattern the grep hunts is
-  absent, which is a result worth stating rather than skipping.
-- **`pnpm audit --prod` reported one moderate**, transitive and dev-only: esbuild ≤0.24.2
-  under `better-auth > drizzle-kit > @esbuild-kit/*`. Not in the deployed bundle. Worth one
-  line in the report and no more.
-- **The ledger's own header was the first stale-doc finding.** Every slice's `Leaves behind`
-  block opened "Read by Slice 8", a slice that does not exist — the audit is 99. Corrected in
-  every slice file here; a project that installed the old text carries it in `docs/setup/`
-  and needs the same edit.

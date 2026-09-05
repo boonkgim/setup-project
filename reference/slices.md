@@ -25,14 +25,14 @@ is excluded from `--through` ranges and from "highest built + 1" at dispatch. Ru
 slice that adds public surface, and again whenever you want; a repo holding `00`–`05` plus `99`
 still has `06` as its next build. The number is 99 and not 08 precisely so the filename says so.
 
-A plain line, with no gaps and no branch. It took two corrections to get there. An "API shell"
-slice once held a hello-world Worker, and the schema that gave it a reason to exist arrived two
-slices later; merging those two removed the branch — the slice downstream needed both — and
-closed a gap in the numbering. Then the database, which had been built first, moved after the
-Worker: it was the one slice in the chain with nothing to integrate against, because
-`apps/web` is forbidden to import it and no other consumer existed yet.
+A plain line, with no gaps and no branch. Two of its joins carry reasoning worth stating,
+because both are the kind that get re-litigated. An "API shell" holding a hello-world Worker
+cannot stand on its own — the schema is what gives it a reason to exist, so the two belong in
+one slice, and merging them is also what removes the branch and the gap in the numbering. And
+the database sits _after_ the Worker rather than first: it is the one layer with nothing to
+integrate against until a consumer exists, since `apps/web` is forbidden to import it.
 
-The rule both corrections came from: **every slice must prove its layer works standalone _and_
+The rule behind both: **every slice must prove its layer works standalone _and_
 works joined to what is already built.** A slice with no seam to prove is doing half a job, and
 a seam nobody can stand on either side of is not a slice boundary.
 
@@ -130,8 +130,8 @@ the browser and the Worker.
   `production` for the env value — a different value than local, from a mechanism never edited
   between the two runs. Locally `Tests 17` (graphql 10 + web 7), and the same table again in a
   fresh clone.
-- **Why it is one slice and not two.** It was two — a hello-world "API shell" and a separate
-  "One SDL" — and the split failed its own criterion. A Worker whose entire schema is
+- **Why it is one slice and not two.** Split into a hello-world "API shell" and a separate
+  "One SDL", it fails its own criterion. A Worker whose entire schema is
   `health: String!` serves nobody, and a contract needs a server to answer it, so neither half
   was a place anyone would sensibly stop. Since the skill builds one slice per invocation and
   stops when it is committed, "stop after the Worker" was an ordinary thing to do, and it left

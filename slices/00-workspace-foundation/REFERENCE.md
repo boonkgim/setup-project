@@ -329,15 +329,15 @@ runs `prettier --write .` inside each package, sees neither root file. Only
 ignore list silently covers half the harness: `pnpm format:changed` leaves the generated files
 alone, `pnpm format` reformats them, and the two fight every time you run them.
 
-**Both flags, not just `.prettierignore` — this paragraph originally said one, and was
-wrong.** `--ignore-path` _replaces_ prettier's default ignore list rather than adding to it,
-and that default is `.gitignore`. Naming only `.prettierignore` therefore switches
-gitignore-based exclusion off, which costs nothing until a package has build output — and
-then costs everything: the first `pnpm format` in Slice 1 reformatted the whole of `.next/`,
-`.next/standalone/` and `.open-next/`. `packages/mock` could not have caught it, having no
-build output and (as a throwaway) a bare `prettier --write .` that kept the default. Read the
-two flags as the ignore set always having been two files, one of which used to be inherited
-invisibly.
+**Both flags, never just `.prettierignore`.** `--ignore-path` _replaces_ prettier's default
+ignore list rather than adding to it, and that default is `.gitignore`. Naming only
+`.prettierignore` therefore switches gitignore-based exclusion off, which costs nothing until a
+package has build output — and then costs everything: `pnpm format` in Slice 1 reformats the
+whole of `.next/`, `.next/standalone/` and `.open-next/`. `packages/mock` cannot catch this,
+having no build output and (as a throwaway) a bare `prettier --write .` that keeps the default,
+so the first package with a build is where it surfaces. The ignore set is two files; one of
+them is only inherited by default, which is exactly why naming the other one silently drops
+it.
 
 ESLint installs at the root for the same reason as prettier — one binary on every package's
 PATH — but unlike prettier it needs a _config_ per package, and flat config resolves plugin
@@ -1015,12 +1015,11 @@ pnpm workspace. What is in it:
 EOF
 ```
 
-**It lists what exists, not what is planned — and this file originally got that wrong.** The
-first version of this block wrote the whole intended stack up front — `apps/web`,
-`apps/graphql`, `packages/db` — and at Slice 0 not one of them existed. That is a forecast,
-and it breaks the rule `setup-project` states for itself — no slice assumes a later one will ever be
-built, because which slices get built is decided at dispatch, by the person running it, not
-here. A `CLAUDE.md` naming `packages/db` in a repo that has no database does active harm:
+**It lists what exists, not what is planned.** Writing the whole intended stack up front —
+`apps/web`, `apps/graphql`, `packages/db` — is a forecast, and it breaks the rule
+`setup-project` states for itself: no slice assumes a later one will ever be built, because
+which slices get built is decided at dispatch, by the person running it, not here. A
+`CLAUDE.md` naming `packages/db` in a repo that has no database does active harm:
 it is loaded on _every_ turn, so every session extending the product starts out believing in
 a package it cannot import, and the file that is supposed to be the one reliable map becomes
 the least reliable thing in the repo.
@@ -1070,114 +1069,14 @@ Ignore it rather than commit it.
 
 Commit.
 
-## Sources and findings
+## Sources
 
-The documentation this slice's §3 research rests on, and what running it actually turned up —
-kept here rather than in a shared bibliography so that reading the slice is reading its
-evidence. **Every version and claim below is dated.** A pin is only as good as its date;
-re-check rather than inherit, and add a dated entry when you do (SKILL.md §7).
-
-### Sources
+The documentation this slice's §3 research rests on — kept here rather than in a shared
+bibliography, so that reading the slice is reading its evidence. **Re-check rather than
+inherit:** a source is only as good as the day it was read, and the version pins in this slice
+are claims about a registry that moves. `changelog/` records what changed here and why.
 
 - [Vite env variables and modes](https://vite.dev/guide/env-and-mode) (what vitest inherits)
-
-### 2026-08-30 — Slice 0
-
-Registry (`npm view <pkg> version`, and `peerDependencies` where it decides a pin):
-
-| Package           | Found   | Decision                                                             |
-| ----------------- | ------- | -------------------------------------------------------------------- |
-| typescript        | 7.0.2   | **Pin 6.0.3.** typescript-eslint 8.68.0 still peers `>=4.8.4 <6.1.0` |
-| typescript-eslint | 8.68.0  | Still caps TS below 6.1 — the reason for the TS pin has not lapsed   |
-| eslint            | 10.9.1  | **Bumped from ^9.39.5**, which npm reports deprecated                |
-| @eslint/js        | 10.0.1  | Follows eslint's major; installed unpinned                           |
-| @types/node       | 26.4.0  | **Pin 24.13.3** — track the Node major in `.nvmrc`, not `latest`     |
-| turbo             | 2.10.12 | Unchanged                                                            |
-| prettier          | 3.9.6   | Unchanged                                                            |
-| vitest            | 4.1.11  | Unchanged                                                            |
-
-Behaviour, reproduced rather than assumed:
-
-- `pnpm init` on pnpm 11.15.1 still writes `devEngines.packageManager` with a caret
-  (`"version": "^11.15.1", "onFail": "download"`). The deletion step is still required.
-- `pnpm add -D typescript` installed 7.0.2; the `catalog:` pin pulled it back to 6.0.3 on
-  the next `pnpm install`. The pin is load-bearing today, not defensive.
-- eslint 10.9.1 + @eslint/js 10.0.1 + typescript-eslint 8.68.0 install with no peer warnings.
-  `eslint-config-next` against eslint 10 is **not yet verified** — Slice 1's lint gate is
-  the first thing that will exercise it.
-
-### 2026-09-06 — Slice 0
-
-Node 24.18.0, pnpm 11.15.1, corepack 0.35.0. Registry re-checked, with `npm view <pkg>
-deprecated` run on all eight — **none deprecated**:
-
-| Package           | Found     | vs 2026-08-31            | Decision                                                |
-| ----------------- | --------- | ------------------------ | ------------------------------------------------------- |
-| typescript        | 7.0.2     | same                     | **Pin 6.0.3** — still the newest 6.x                    |
-| typescript-eslint | 8.69.0    | ↑ 8.68.0                 | Peers re-read on 8.69.0: `typescript: ">=4.8.4 <6.1.0"` |
-| eslint            | 10.10.0   | ↑ 10.9.1                 | **Catalog bumped to `^10.10.0`**                        |
-| @eslint/js        | 10.0.1    | same                     | Unpinned                                                |
-| @types/node       | 26.4.1    | ↑ 26.4.0                 | **Pin 24.13.3** — still the newest 24.x                 |
-| turbo             | 2.10.12   | same                     | Unchanged                                               |
-| prettier          | 3.9.6     | same                     | Unchanged                                               |
-| vitest            | **5.0.0** | **↑ 4.1.11 — new major** | Adopted after probing; see the note at `packages/mock`  |
-
-The TypeScript cap has now held across three consecutive checks. It is not inertia: the peer
-range was read off 8.69.0 itself, not carried forward.
-
-**vitest 5.0.0 keeps both config facts the harness depends on.** Probed before executing:
-inline `projects` objects run, root-level `passWithNoTests` still reaches them, and an
-empty-project run exits `0`. `engines` are `^22.12.0 || ^24.0.0 || >=26.0.0`.
-
-Execution corrections made to this file as a result of that run:
-
-- **The `Gate (local only)` table and its `Commit.` were duplicated verbatim.** Removed.
-- The `pnpm-workspace.yaml` comment said to revisit the TypeScript pin at "typescript-eslint
-  ships TS >= 7.1". The cap it describes is `<6.1.0`, so the trigger is **6.1**. Corrected.
-- The `devEngines` trap is **root-only** — `pnpm init` writes the block only when it finds no
-  workspace root above it, verified both ways on 11.15.1. The slice's later sub-package inits
-  were already right to omit the deletion; now it says why.
-- **`pnpm verify` cannot run before the repo's first commit** (no `HEAD` for `format:changed`
-  or `--filter="...[HEAD]"`). Newly documented, along with formatting root-level files directly
-  that one time, and with `git init` and the symlink check now stated at the commit step.
-
-Behaviour reproduced, unchanged from previous runs: the `devEngines` block breaks `pnpm -v`
-itself until deleted; `pnpm add -D turbo typescript` resolved 7.0.2 and the catalog pin moved it
-to 6.0.3 on the next install. Gate green first time — `Tests 1 passed`, `docs:check` no drift
-across **9 files and 16 scripts**, the same counts as 2026-08-31. Running prettier across the
-whole repo changed no heredoc file, so the blocks in this slice are still at prettier's fixed
-point.
-
-Noted, not acted on: pnpm advertises **12.3.4**. Everything here was verified on 11.15.1, and
-`packageManager` pins that exactly. Whoever takes that upgrade should re-verify the `devEngines`
-behaviour first — it is `pnpm init` behaviour, and a major is exactly where it would change.
-
-`eslint-config-next` against eslint 10 remains **unverified**; Slice 1 is still the first thing
-that exercises it.
-
-### 2026-08-31 — Slice 0, first full execution
-
-Every registry pin above re-checked and **unchanged**: typescript 7.0.2 latest with 6.0.3
-the newest 6.x, typescript-eslint 8.68.0 still peering `>=4.8.4 <6.1.0`, eslint 10.9.1,
-@types/node 26.4.0 latest with 24.13.3 the newest 24.x, turbo 2.10.12, prettier 3.9.6,
-vitest 4.1.11. Docs re-read: `allowBuilds` is confirmed as the pnpm 11 replacement for
-`onlyBuiltDependencies` (and four other build settings), and vitest 4 still takes inline
-`{ test: { name, include } }` project objects with `passWithNoTests` only at the root.
-
-First run of this slice end to end, on Node 24.18.0 / pnpm 11.15.1. It needed no
-corrections — every block ran as written and the gate passed on the first attempt, with
-`docs:check` reporting no drift across 9 files and 16 scripts. Two behaviours worth
-recording exactly:
-
-- The `devEngines` trap is not theoretical. With the block `pnpm init` writes still in
-  place, **every** pnpm command fails with
-  `Invalid package manager specification in package.json (pnpm@^11.15.1); expected a semver version` —
-  which is why the deletion step uses node. Deleting it restored `pnpm -v` immediately.
-- `pnpm add -D turbo typescript` resolved typescript to `^7.0.2`, and the `catalog:` pin
-  moved it to 6.0.3 on the next install, logged as `- typescript 7.0.2 / + typescript 6.0.3`.
-
-`eslint-config-next` against eslint 10 remains **unverified** — Slice 1 is still the first
-thing that will exercise it.
 
 ## Leaves behind
 

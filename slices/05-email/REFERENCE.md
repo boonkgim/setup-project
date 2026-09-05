@@ -948,57 +948,18 @@ EOF
 +packages/config (shared tsconfig).
 ```
 
-## Sources and findings
+## Sources
 
-The documentation this slice's §3 research rests on, and what running it actually turned up —
-kept here rather than in a shared bibliography so that reading the slice is reading its
-evidence. **Every version and claim below is dated.** A pin is only as good as its date;
-re-check rather than inherit, and add a dated entry when you do (SKILL.md §7).
-
-### Sources
+The documentation this slice's §3 research rests on — kept here rather than in a shared
+bibliography, so that reading the slice is reading its evidence. **Re-check rather than
+inherit:** a source is only as good as the day it was read, and the version pins in this slice
+are claims about a registry that moves. `changelog/` records what changed here and why.
 
 - [Resend Node SDK](https://resend.com/docs/send-with-nodejs) and [Resend on Cloudflare Workers](https://resend.com/docs/send-with-cloudflare-workers)
 - [React Email components](https://react.email/docs/components/html) and [`render`](https://react.email/docs/utilities/render)
 - [React Email CHANGELOG](https://github.com/resend/react-email/blob/main/packages/react-email/CHANGELOG.md) — the v6 consolidation and its migration steps are only stated here
 - [React Email CLI](https://react.email/docs/cli) (`email dev`)
 - [Workers secrets](https://developers.cloudflare.com/workers/configuration/secrets/) (`wrangler secret put`)
-
-### Slice 5 — Email (checked 2026-09-01)
-
-Versions at time of writing: `resend` 6.25.0, `react-email` 6.9.3, `@react-email/ui` 6.9.3,
-`@react-email/render` 2.0.6 (transitive, exactly pinned by `react-email`).
-
-- **`react-email@6.0.0` (2026-04-16) merged the whole library into one package**, and
-  `@react-email/components` plus every per-component package is deprecated — "Package no
-  longer supported", last published 2026-04-09. `@react-email/render` and `@react-email/ui`
-  are the survivors. The changelog's own migration is three steps: remove
-  `@react-email/components`, move `react-email` into `dependencies`, and import everything
-  from `react-email`.
-- **Nothing about that fails.** The deprecated packages install and export the same names, so
-  the pre-v6 slice compiles, tests green, and deploys. The only signal is `pnpm add` printing
-  `[WARN] deprecated …: Package no longer supported`. **Read install output, not exit codes** —
-  a package that moved without changing its API has no other way to tell you.
-- **The CLI in `dependencies` is not a bundle problem.** esbuild, chokidar, socket.io, prismjs
-  and tailwindcss are reachable only from `dist/cli/index.mjs`. Measured Worker bundle after
-  this slice: 2576.07 KiB raw / 520.84 KiB gzipped — within 1% of the pre-v6 three-package
-  split.
-- **`render(element, { plainText: true })` is unchanged** in `@react-email/render` 2.x, and
-  the `workerd` export condition still lives on that package's own `package.json` (so it is
-  honoured through `react-email`'s re-export, even though `react-email` itself declares only
-  `import`/`require`).
-- **`email dev` creates no `.react-email` directory** — v6 packs the preview server into
-  `$HOME/.react-email`. It is `email build` and `email export` that write `.react-email/` in
-  the project. Ignore it anyway; the commands are one word apart.
-- **`--port` is a preference, not a reservation.** `email dev` takes the next free port and
-  prints `Port 3001 is already in use, trying 3002`. Read the port off the output.
-- **`@react-email/ui` is still absent from the CLI's own dependencies**, so the reference's
-  reason for declaring it holds: without it `email dev` stops on an install prompt that, with
-  no TTY, is a silent exit.
-- **`resend` 6.25.0 still returns `{ data, error }` and does not throw**, and now declares
-  `@react-email/render` as an _optional_ peer, so nothing warns when it is only transitive.
-- **A `docs-check.ignore` entry must be added by a `diff` hunk with a context line.** A plain
-  fenced block is prose to the checker, and an all-`+` hunk is rejected with `hunk has no
-context or removed lines to anchor on`. This bit on the first run of this slice.
 
 ## Leaves behind
 

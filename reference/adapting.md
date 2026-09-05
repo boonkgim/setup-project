@@ -1,8 +1,15 @@
 # Maintaining the slices
 
-The slice files under `slices/` are the substance of this skill. They came from a working
-repo's build plan and were made project-agnostic and self-contained. This file records what
-was changed, so the next person editing them knows which rules to keep.
+The slice directories under `slices/` are the substance of this skill. They came from a
+working repo's build plan and were made project-agnostic and self-contained. This file records
+what was changed, so the next person editing them knows which rules to keep.
+
+Each slice is a directory holding `REFERENCE.md` — the clean procedure, which is the only part
+rendered into a project — and `changelog/<YYYY-MM-DD>.md`, one append-only file per day the
+reference changed. When you edit a REFERENCE, leave it reading as though it had always said the
+new thing, and put what it used to say in a changelog entry. Both halves stay
+**project-agnostic**: a changelog records that a pin moved or a claim was wrong, never that one
+repo's gate went green.
 
 ## The `__PROJECT__` token
 
@@ -78,7 +85,7 @@ file rather than about the doc.
   The installed plan is a markdown file inside the repo it describes, so `format:changed`
   reformats it the first time anyone edits it — and a slice file that ships unformatted hands
   every project built from it that pending diff. Run `prettier --check slices/` after editing
-  one. Mis-padded prose tables are the usual culprit: harmless in the skill, but they surface
+  one — it covers both the REFERENCEs and the changelogs. Mis-padded prose tables are the usual culprit: harmless in the skill, but they surface
   in the target repo as a spontaneous diff on a file nobody touched. (Four reference files
   carried exactly that until it was found by running slice 0 for real.)
 
@@ -108,7 +115,7 @@ New infrastructure with an unproven deploy pipeline is a horizontal slice, added
 terms as 05–07: two gates, an operating manual for what it owns, and a `CLAUDE.md` hunk if a
 session needs to know it exists.
 
-1. Write `slices/NN-name.md`.
+1. Write `slices/NN-name/REFERENCE.md`.
 2. Add it to `CATALOG` and `REQUIRES` in `scripts/install-plan.mjs`, and to `ORDER`.
 3. Add its entry to `reference/slices.md` — including the accounts table, if it needs one.
 

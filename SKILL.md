@@ -11,7 +11,7 @@ One slice per invocation, through a fixed loop:
 **reference → research → wire → plan → execute → local gate → reconcile → production gate
 → reconcile → hand the user the manual steps → commit**
 
-The `slices/` files are a **reference, not a script.** They encode a stack that was verified
+The `slices/` directories are a **reference, not a script.** They encode a stack that was verified
 as a set, and — more valuably — the traps that cost real time: the `devEngines` block
 `pnpm init` writes that corepack then rejects, the second pnpm workspace `create-next-app`
 opens inside `apps/web`. That reasoning keeps. The version pins, CLI flags and API shapes
@@ -80,8 +80,11 @@ Ask once; every later slice reads it back from `package.json`.
 
 ## 2. Read the reference slice
 
-Read `slices/NN-*.md` **in full** before anything else, and `reference/slices.md` for what
-this slice's gate proves and which account it needs. The prose between the code blocks is the
+Read `slices/NN-*/REFERENCE.md` **in full** before anything else, and `reference/slices.md`
+for what this slice's gate proves and which account it needs. The REFERENCE is the procedure
+and is written to be read on its own; its sibling `changelog/` is history you do **not** need
+up front — open a dated entry only when you hit something the REFERENCE does not explain, or
+want to know whether a trap you just met has been seen before. The prose between the code blocks is the
 part that keeps its value — read it for the reasoning, and treat every version number, flag
 and file path in it as a claim to check rather than a fact.
 
@@ -190,7 +193,8 @@ node <skill dir>/scripts/install-plan.mjs \
 `~/.agents/skills/setup-project`, or a project's own `.claude/skills/setup-project`. The
 script resolves its slices relative to itself, so it runs correctly from any of them.
 
-That renders `slices/NN-*.md` into `docs/setup/` with `__PROJECT__` and `__DOCS__` resolved,
+That renders `slices/NN-*/REFERENCE.md` into `docs/setup/NN-*.md` with `__PROJECT__` and
+`__DOCS__` resolved,
 and writes nothing else — no index, no source list. `docs/setup/` holds slice files only, one
 per slice built, and `ls` is the index. Nothing is installed, built or committed.
 
@@ -331,20 +335,35 @@ production.
 
 Run this at the end of Round 1 and again at the end of Round 2, not once at the finish.
 
-A green gate means the repo is right. It does not mean the plan is. Correct both:
+A green gate means the repo is right. It does not mean the plan is. There are **three**
+records, and they answer three different questions — keeping them apart is what stops the
+skill from silently becoming a diary of the last project it built:
 
-1. **The project's `docs/setup/NN-*.md`** — what actually ran here. Fix every block that had
-   to change, and write down the failures worth remembering.
-2. **This skill's `slices/NN-*.md`** — what should carry forward. Only the general lesson: a
-   moved flag, a changed API, a trap that will hit the next project too. Project-specific
-   choices stay in the project. The test is whether the sentence would still be true in a
-   repo with a different name, owner and account.
+1. **The project's `docs/setup/NN-*.md` — "what ran here."** Fix every block that had to
+   change, and write down the failures worth remembering. This is the only one of the three
+   that may name this repo, its accounts, its URLs, its test counts.
+2. **This skill's `slices/NN-*/REFERENCE.md` — "what to do."** Correct it _in place_ and leave
+   it clean: the procedure as it should now be read, with no trace of what it used to say. Only
+   the general lesson belongs here — a moved flag, a changed API, a trap that will hit the next
+   project too.
+3. **This skill's `slices/NN-*/changelog/<today>.md` — "why it now says that."** A **new file**
+   named for the date, never an edit to an existing one, so history can only accumulate and a
+   bad reconcile cannot corrupt what is already recorded. Same day, second change: append to
+   that day's file.
 
-**Update the slice's `Sources and findings` section — this is part of reconciling, not an
-optional extra.** Every slice ends with one: the docs its §3 research rests on, then one dated
-entry per execution. Add an entry for this run, naming the versions you actually resolved, the
-docs you read, and what you had to reproduce rather than assume. If §3 read a page no source
-list names, add it.
+**The test for 2 and 3 is the same: would this sentence still be true in a repo with a
+different name, owner and account?** If not, it belongs in 1. Concretely — `eslint 10.9.1 →
+10.10.0, nothing peers against it` is a changelog entry; `the gate went green first try` and
+`no drift across 9 files and 16 scripts` are not, because the counts are that repo's.
+
+**Writing the changelog entry is part of reconciling, not an optional extra.** Record the
+versions you actually resolved, the docs you read, what you had to reproduce rather than
+assume, and every correction you just made to the REFERENCE — naming what it said before, since
+that is the one place that record is allowed to exist. Do not put a date heading inside the
+file; the filename is the date and the directory is the slice.
+
+**`## Sources` stays in the REFERENCE.** It is the list of docs the slice's §3 research rests
+on — current state, not history. If §3 read a page no source list names, add it there.
 
 There is no shared bibliography, deliberately. One file held all of it until it turned out to
 be the worst of both worlds: most findings were duplicated into the slice that needed them and
@@ -374,14 +393,21 @@ the record and the thing it records should never land apart.
   table. Read it before building any slice.
 - `reference/adapting.md` — how these files were made project-agnostic, and what to change
   when a pin goes stale or a slice needs a variant.
-- `scripts/install-plan.mjs` — renders slices into `<repo>/docs/setup/`. `--list` prints the
-  catalog; `--force` overwrites a slice file already there.
-- `slices/99-security-audit.md` — the audit: reads the code for setup-era exposure and reports.
+- `scripts/install-plan.mjs` — renders each slice's `REFERENCE.md` into
+  `<repo>/docs/setup/`. `--list` prints the catalog; `--force` overwrites a slice file already
+  there.
+- `slices/` — one **directory per slice**: the eight build slices `00`–`07`, plus the `99`
+  audit. Each holds:
+  - `REFERENCE.md` — the clean procedure, plus its `## Sources` and `## Leaves behind`. This
+    is what gets rendered into a project. The project name is the literal token `__PROJECT__`,
+    and the plan's own directory is `__DOCS__`.
+  - `changelog/<YYYY-MM-DD>.md` — why the REFERENCE now says what it says: pins that moved,
+    claims corrected, traps found. Append-only, never rendered into a project, and
+    **project-agnostic** — see §7 for the test an entry has to pass.
+- `slices/99-security-audit/` — the audit: reads the code for setup-era exposure and reports.
   Re-runnable, builds nothing, and the only slice that is not a rung of the chain — numbered
-  99 rather than 08 so that "not the next rung" is visible in the filename.
-- Sources and findings live **in each slice**, not in a shared file — see §7.
-- `slices/` — the eight build slices `00`–`07`, plus the `99` audit. The project name is the
-  literal token `__PROJECT__`, and the plan's own directory is `__DOCS__`.
+  99 rather than 08 so that "not the next rung" is visible in the name.
+- Sources live **in each slice's REFERENCE**, not in a shared bibliography — see §7.
 - `assets/code-ui-SKILL.md` — the UI-writing skill slice 06 installs.
 
 ## What this skill does not do

@@ -10,6 +10,14 @@
 // and __DOCS__ resolved. Slice 6 also gets assets/code-ui-SKILL.md, which it copies into
 // .claude/skills/.
 //
+// Each slice is a directory — slices/<stem>/REFERENCE.md is the clean procedure, and
+// slices/<stem>/changelog/<date>.md is why that procedure now says what it says. Only the
+// REFERENCE is rendered: a project needs the plan it is about to execute, not the history of
+// how the reference reached it. The changelog is the skill's own record and stays here, which
+// is also what keeps it project-agnostic — nothing in it is allowed to describe one repo's run.
+// The project's counterpart is docs/setup/<stem>.md itself, which is that repo's execution
+// record and is amended in place as it is built.
+//
 // One kind of file, one lifecycle. Every file here is seeded once and then owned by the
 // project — edited before it is run, corrected after it is, and compared against the repo by
 // docs:check forever after. There is deliberately no generated index and no copied source
@@ -285,7 +293,7 @@ const put = (rel, text) => {
 
 for (const id of install) {
   const stem = CATALOG[id][0];
-  put(`${stem}.md`, resolve(readFileSync(join(SLICES, `${stem}.md`), "utf8")));
+  put(`${stem}.md`, resolve(readFileSync(join(SLICES, stem, "REFERENCE.md"), "utf8")));
 }
 
 if (wanted.has("06"))

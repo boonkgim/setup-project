@@ -659,85 +659,18 @@ accident.
 EOF
 ````
 
-## Sources and findings
+## Sources
 
-The documentation this slice's §3 research rests on, and what running it actually turned up —
-kept here rather than in a shared bibliography so that reading the slice is reading its
-evidence. **Every version and claim below is dated.** A pin is only as good as its date;
-re-check rather than inherit, and add a dated entry when you do (SKILL.md §7).
-
-### Sources
+The documentation this slice's §3 research rests on — kept here rather than in a shared
+bibliography, so that reading the slice is reading its evidence. **Re-check rather than
+inherit:** a source is only as good as the day it was read, and the version pins in this slice
+are claims about a registry that moves. `changelog/` records what changed here and why.
 
 - [Hyperdrive get-started](https://developers.cloudflare.com/hyperdrive/get-started/)
 - [Hyperdrive local development](https://developers.cloudflare.com/hyperdrive/configuration/local-development/)
 - [Hyperdrive + Neon](https://developers.cloudflare.com/hyperdrive/examples/connect-to-postgres/postgres-database-providers/neon/)
 - [Connect to PostgreSQL · Hyperdrive](https://developers.cloudflare.com/hyperdrive/examples/connect-to-postgres/)
 - [OpenNext DB how-to](https://opennext.js.org/cloudflare/howtos/db)
-
-### Slice 3 — Database (checked 2026-08-31)
-
-- **Versions as installed:** drizzle-orm 0.45.2, drizzle-kit 0.31.10, pg 8.23.0,
-  @types/pg 8.23.1, dotenv 17.4.2, vitest 4.1.11. drizzle-kit's config surface is unchanged —
-  `defineConfig` is still exported from `drizzle-kit`, `dbCredentials.url` is still the
-  postgresql key, and `--config` still selects an alternate file. Nothing in this slice's
-  drizzle code needed adapting.
-- **`postgres:18` moved its data directory, and the failure does not look like a volume
-  problem.** `PGDATA` is now `/var/lib/postgresql/18/docker` — a major-versioned subdirectory,
-  so `pg_upgrade --link` can work across majors without crossing a mount boundary. Mount the
-  pre-18 path (`/var/lib/postgresql/data`) on an 18 image and the container **exits 1 on first
-  start** with a long `pg_upgrade` advisory, which reads as a broken image rather than a wrong
-  line in the compose file. Mount `/var/lib/postgresql` instead.
-  See [docker-library/postgres#1259](https://github.com/docker-library/postgres/pull/1259).
-- **Neon supports Postgres 14–18 and its create-project form defaults to 18** (18 GA on Neon
-  since 2026-05-01). So the local pin is not a judgement call on a greenfield project: take the
-  newest, and only match an older major when an existing Neon project already runs one.
-- **Cloudflare's node-postgres minimum is now 8.16.3**, up from 8.13, and the page moved to
-  `hyperdrive/examples/connect-to-postgres/postgres-drivers-and-libraries/node-postgres/`. The
-  sample there now builds a bare `Client` per request rather than a `Pool`; `Pool` with
-  `maxUses: 1` is the same contract and keeps one type usable by both the Worker and the
-  package's own integration test.
-- **`localConnectionString` survives, and `id` is still required even for local-only
-  development** — so the placeholder-then-replace step is not avoidable by omitting the key.
-  `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_<BINDING>` also exists as an env-var
-  alternative; unused here, since the value is the docker-compose credentials already in the
-  repo.
-- **`wrangler hyperdrive create` needs `--env-file .env.production` on a multi-account login.**
-  Same condition the web slice flags for `deploy`, but it applies to resource _creation_ too,
-  and the reference procedure omitted it. `wrangler whoami` is how you find out; three accounts
-  on this login made it mandatory.
-- **`wrangler hyperdrive create` now has `--binding` and `--update-config`**, which will write
-  the binding into `wrangler.jsonc` for you. Declined deliberately — it reformats the file and
-  drops the comments. Even without the flag the command ends by offering the same thing; a
-  non-interactive shell answers `Using fallback value in non-interactive context: no`, which is
-  the wanted answer, but an interactive one has to be told.
-- **Hyperdrive accepted Neon's string with `?sslmode=require&channel_binding=require` intact.**
-  No need to strip query parameters before handing it over.
-- **`pg` now prints a `SECURITY WARNING` on `sslmode=require`**, announcing that `prefer`,
-  `require` and `verify-ca` stop being aliases for `verify-full` in pg v9 /
-  pg-connection-string v3. Deprecation notice only; `migrate:production` applies. Revisit at pg 9.
-- **No web redeploy was needed for the API's new binding.** The service binding resolves to the
-  Worker rather than to a version of it, so the deployed page served the new `health` value on
-  its next request. Verified rather than assumed.
-- **Neon's create-project form offers "Enable Neon Auth".** Leave it off — the auth slice uses
-  Better Auth and generates its own tables; enabling this lands a competing auth system in the
-  same database.
-- **Getting the connection string out of the console without pasting it.** Turning
-  **Connection pooling** off is visible in the host (`-pooler` present or absent), and **Copy
-  snippet** copies the real password rather than the masked form shown on screen — so
-  `xclip -selection clipboard -o` moves it console → file without a shell history.
-- **The `format` script's two-flag correction was applied to the prose but not to three of the
-  commands.** Slice 0 states the rule and carries a paragraph explaining that it originally
-  said one flag and was wrong; Slice 1 is where the bug was found and its command was fixed.
-  The sibling `pnpm pkg set` lines in slices 2, 3 and 5 kept the pre-correction one-path form
-  — so the reference stated the rule and then handed you three commands breaking it. All three
-  are now corrected, each with a short note pointing back at slice 0/1 so the next partial fix
-  is visible.
-  Measured rather than reasoned: in a built `apps/web`, `prettier --list-different .` reports
-  **0** files with both flags and **356** with only `--ignore-path ../../.prettierignore` —
-  `.next` build output that `pnpm format` would rewrite in place. The two entries left alone in
-  slice 0 are correct: `packages/mock` runs a bare `prettier --write .`, which keeps prettier's
-  default of _both_ ignore files (and is exactly why mock could not have caught this), and the
-  root script is a `turbo run format` passthrough.
 
 ## Leaves behind
 
