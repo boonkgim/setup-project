@@ -30,6 +30,14 @@ node -e 'const fs=require("fs");const p=JSON.parse(fs.readFileSync("package.json
 The exact-version `packageManager` field set below covers the same ground without a second
 place to keep in sync (corepack auto-downloads from it once `corepack enable` has run).
 
+**This is a root-only trap, and that is why no later `pnpm init` in this slice repeats the
+deletion.** `pnpm init` writes `devEngines` **only when it finds no workspace root above it** —
+verified on pnpm 11.15.1 by running it in a throwaway directory under an existing workspace's
+`packages/`, which got no such block, against a directory outside any workspace, which did. So
+`packages/config` and `packages/mock` below need no deletion step. Worth knowing rather than
+guessing, because deleting a key that was never written is silent either way, and the version
+that matters here is `pnpm init`'s, not the block's.
+
 Set the root `package.json` fields with `pnpm pkg set` — scripted, deterministic JSON edits
 instead of hand-editing (`--json` makes `true` a real boolean, not the string `"true"`):
 
@@ -84,18 +92,18 @@ allowBuilds:
 # Verify all three before running this slice — they are the pins most likely to
 # have moved, and two of the three moved between writing this and last checking it.
 #
-# TypeScript is held at 6.x, NOT the 7.x native port: typescript-eslint 8.68.0
+# TypeScript is held at 6.x, NOT the 7.x native port: typescript-eslint 8.69.0
 # still declares `typescript: ">=4.8.4 <6.1.0"` and hard-errors ("typescript-eslint
 # does not support TS 7.0") rather than warning, which takes the shared ESLint base —
 # and so `pnpm lint` in every package — down with it. tsc and `next build` are
 # both fine on 7; ESLint is the sole blocker. npm's `latest` for typescript is 7.x,
 # so a bare `pnpm add -D typescript` lands on the broken side and the catalog pin
 # is what pulls it back — you will see it do exactly that on `pnpm install`.
-# Revisit when typescript-eslint ships TS >= 7.1 support:
+# Revisit when typescript-eslint ships TS >= 6.1 support:
 # https://github.com/typescript-eslint/typescript-eslint/issues/10940
 #
 # ESLint is 10.x. 9.x is deprecated on npm ("no longer supported") and installing it
-# prints that on every run; typescript-eslint 8.68.0 peers
+# prints that on every run; typescript-eslint 8.69.0 peers
 # `eslint: ^8.57.0 || ^9.0.0 || ^10.0.0`, so nothing holds this back. @eslint/js
 # follows eslint's major and is installed unpinned below, which is why it needs no
 # catalog entry.
@@ -107,7 +115,7 @@ allowBuilds:
 # @types/node ships majors for Node versions you are not on.
 catalog:
   typescript: ^6.0.3
-  eslint: ^10.9.1
+  eslint: ^10.10.0
   "@types/node": ^24.13.3
 EOF
 ```
@@ -425,6 +433,21 @@ pnpm pkg set \
   'scripts["test:unit"]=vitest run --project unit' \
   'scripts["test:integration"]=vitest run --project integration'
 ```
+
+**`pnpm add -D vitest` takes whatever major is current, so prove the two config facts this
+harness leans on before trusting it.** They are: inline
+`projects: [{ test: { name, include } }]` objects, and `passWithNoTests` on the **root** `test`
+object applying to those projects. Both survived the 4 → 5 major (checked 2026-09-06 on vitest
+5.0.0), but neither is guaranteed to survive the next one, and if either breaks the harness
+goes red in Slice 0 looking like a config bug you wrote. The check is a minute in a throwaway
+directory — write the config, one trivial test, then confirm `vitest run --project unit`
+reports `Tests 1 passed` **and** `vitest run --project integration`, matching no files, exits
+`0`. Do that before executing the slice, not after it fails.
+
+vitest stays out of the `catalog:` block at this slice, per the rule above: a version moves
+into the catalog when the _second_ package installs it, and `packages/mock` is the first — and
+it is deleted before that second package arrives. The slice that adds the next copy owns the
+entry, and should re-check the major then rather than inherit this one.
 
 The four files it needs — `tsconfig.json`, `eslint.config.mjs`, `vitest.config.ts`, and one
 real test — are written with a `MOCKEOF` heredoc terminator instead of the plan's usual `EOF`,
@@ -1016,17 +1039,34 @@ sentence — a list takes a one-line delta, which is exactly what the compositio
 | `pnpm format`    | pass                                                                      |
 | **Tests**        | **1 passed — `packages/mock`'s smoke test. Back to 0 once it's deleted.** |
 
-Commit.
+Every row is a command whose output can be read, so this gate is entirely Round 1 (automated,
+local). The slice deploys nothing and shows nothing only a person can judge, so it has no
+Round 2 and no Round 3 — the one slice in the chain closed completely by machine.
 
-**Gate (local only)** — from the repo root:
+**`pnpm verify` is deliberately not a row here: in a fresh repo it cannot run yet.** Both
+halves of it resolve `HEAD` — `format:changed` diffs against it, turbo's `--filter="...[HEAD]"`
+asks the SCM what changed — and a repository with no commits has none, so both fail with
+`fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree`. The gate
+has to be passable before the commit it gates, which is why it is composed of the five rows
+above. Run `pnpm verify` once straight after committing to confirm it works; from Slice 1 on
+it is the ordinary inner-loop command.
 
-| Check            | Expect                                                                    |
-| ---------------- | ------------------------------------------------------------------------- |
-| `pnpm install`   | clean, no `ERR_PNPM_IGNORED_BUILDS`                                       |
-| `pnpm typecheck` | pass                                                                      |
-| `pnpm lint`      | pass — `packages/mock` is the only package with a `lint` script           |
-| `pnpm format`    | pass                                                                      |
-| **Tests**        | **1 passed — `packages/mock`'s smoke test. Back to 0 once it's deleted.** |
+`format:changed` being unavailable also means the root-level files are not formatted by
+`pnpm format`, which only fans out to packages. Format them once, directly — both ignore paths,
+for the reason the harness section gives:
+
+```bash
+npx prettier --write --ignore-unknown --ignore-path .gitignore --ignore-path .prettierignore .
+```
+
+**If this directory is not a git repository yet, create it before committing** (`git init -b
+main`). Then check what `git add -A` actually staged before the first commit, rather than after:
+`.gitignore` is written above precisely so `node_modules/` and the `.env` family are excluded
+from the very first commit, and a secret committed once stays in history whatever a later rule
+says. Watch for **symlinks**, which git stores as their target string — a skills or tooling
+directory symlinked in from elsewhere on the machine (mode `120000` in `git ls-files --stage`)
+writes one machine's absolute layout into the repo and hands every other clone a dangling link.
+Ignore it rather than commit it.
 
 Commit.
 
@@ -1065,6 +1105,55 @@ Behaviour, reproduced rather than assumed:
 - eslint 10.9.1 + @eslint/js 10.0.1 + typescript-eslint 8.68.0 install with no peer warnings.
   `eslint-config-next` against eslint 10 is **not yet verified** — Slice 1's lint gate is
   the first thing that will exercise it.
+
+### 2026-09-06 — Slice 0
+
+Node 24.18.0, pnpm 11.15.1, corepack 0.35.0. Registry re-checked, with `npm view <pkg>
+deprecated` run on all eight — **none deprecated**:
+
+| Package           | Found     | vs 2026-08-31            | Decision                                                |
+| ----------------- | --------- | ------------------------ | ------------------------------------------------------- |
+| typescript        | 7.0.2     | same                     | **Pin 6.0.3** — still the newest 6.x                    |
+| typescript-eslint | 8.69.0    | ↑ 8.68.0                 | Peers re-read on 8.69.0: `typescript: ">=4.8.4 <6.1.0"` |
+| eslint            | 10.10.0   | ↑ 10.9.1                 | **Catalog bumped to `^10.10.0`**                        |
+| @eslint/js        | 10.0.1    | same                     | Unpinned                                                |
+| @types/node       | 26.4.1    | ↑ 26.4.0                 | **Pin 24.13.3** — still the newest 24.x                 |
+| turbo             | 2.10.12   | same                     | Unchanged                                               |
+| prettier          | 3.9.6     | same                     | Unchanged                                               |
+| vitest            | **5.0.0** | **↑ 4.1.11 — new major** | Adopted after probing; see the note at `packages/mock`  |
+
+The TypeScript cap has now held across three consecutive checks. It is not inertia: the peer
+range was read off 8.69.0 itself, not carried forward.
+
+**vitest 5.0.0 keeps both config facts the harness depends on.** Probed before executing:
+inline `projects` objects run, root-level `passWithNoTests` still reaches them, and an
+empty-project run exits `0`. `engines` are `^22.12.0 || ^24.0.0 || >=26.0.0`.
+
+Execution corrections made to this file as a result of that run:
+
+- **The `Gate (local only)` table and its `Commit.` were duplicated verbatim.** Removed.
+- The `pnpm-workspace.yaml` comment said to revisit the TypeScript pin at "typescript-eslint
+  ships TS >= 7.1". The cap it describes is `<6.1.0`, so the trigger is **6.1**. Corrected.
+- The `devEngines` trap is **root-only** — `pnpm init` writes the block only when it finds no
+  workspace root above it, verified both ways on 11.15.1. The slice's later sub-package inits
+  were already right to omit the deletion; now it says why.
+- **`pnpm verify` cannot run before the repo's first commit** (no `HEAD` for `format:changed`
+  or `--filter="...[HEAD]"`). Newly documented, along with formatting root-level files directly
+  that one time, and with `git init` and the symlink check now stated at the commit step.
+
+Behaviour reproduced, unchanged from previous runs: the `devEngines` block breaks `pnpm -v`
+itself until deleted; `pnpm add -D turbo typescript` resolved 7.0.2 and the catalog pin moved it
+to 6.0.3 on the next install. Gate green first time — `Tests 1 passed`, `docs:check` no drift
+across **9 files and 16 scripts**, the same counts as 2026-08-31. Running prettier across the
+whole repo changed no heredoc file, so the blocks in this slice are still at prettier's fixed
+point.
+
+Noted, not acted on: pnpm advertises **12.3.4**. Everything here was verified on 11.15.1, and
+`packageManager` pins that exactly. Whoever takes that upgrade should re-verify the `devEngines`
+behaviour first — it is `pnpm init` behaviour, and a major is exactly where it would change.
+
+`eslint-config-next` against eslint 10 remains **unverified**; Slice 1 is still the first thing
+that exercises it.
 
 ### 2026-08-31 — Slice 0, first full execution
 
