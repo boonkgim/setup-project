@@ -1,5 +1,5 @@
 ---
-name: code-ui
+name: project-ui
 description: How to write UI code in apps/web — component reuse, spacing ownership (padding in, margin out), the four states, accessibility, user-facing messages, the type ramp, touch targets, and layout that does not shift or overflow, plus the six-category token layer (colour, type, radius, elevation, motion, density) this project's theme is wired from. Use whenever building or changing any component, page, or form. Invoked from the web skill; it never commits.
 ---
 

@@ -466,7 +466,7 @@ the record and the thing it records should never land apart.
   Re-runnable, builds nothing, and the only slice that is not a rung of the chain — numbered
   99 rather than 08 so that "not the next rung" is visible in the name.
 - Sources live **in each slice's REFERENCE**, not in a shared bibliography — see §7.
-- `assets/code-ui-SKILL.md` — the UI-writing skill slice 06 installs.
+- `assets/project-ui-SKILL.md` — the UI-writing skill slice 06 installs.
 
 ## What this skill does not do
 

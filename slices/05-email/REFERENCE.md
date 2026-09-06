@@ -868,10 +868,10 @@ Commit.
 
 ````bash
 cd ../..
-mkdir -p .claude/skills/email
-cat > .claude/skills/email/SKILL.md <<'EOF'
+mkdir -p .claude/skills/project-email
+cat > .claude/skills/project-email/SKILL.md <<'EOF'
 ---
-name: email
+name: project-email
 description: Write or change transactional email in __PROJECT__ — React Email templates in packages/email, the render helpers, and the Resend transport. Use when a feature sends mail, when a template's copy or markup changes, or when the mail transport or sender address changes.
 ---
 

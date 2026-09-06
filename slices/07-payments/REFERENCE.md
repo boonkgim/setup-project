@@ -1107,7 +1107,7 @@ EOF
 
 UTC rather than the visitor's zone is forced by the layer, not chosen for taste: the home
 page is a server component, and an offset that only exists after mount is precisely the
-hydration trap `code-ui` names. Spelling the zone out in the output is what keeps the value
+hydration trap `project-ui` names. Spelling the zone out in the output is what keeps the value
 honest for a reader who is not on UTC.
 
 ### The checkout route
@@ -1980,10 +1980,10 @@ rather than three sets of bullets. The new skill is a heredoc; the pointers are 
 
 ````bash
 cd ../..
-mkdir -p .claude/skills/payments
-cat > .claude/skills/payments/SKILL.md <<'EOF'
+mkdir -p .claude/skills/project-payments
+cat > .claude/skills/project-payments/SKILL.md <<'EOF'
 ---
-name: payments
+name: project-payments
 description: Work with Stripe in __PROJECT__ — embedded Checkout Sessions from apps/graphql, the form mounted in apps/web, the signed webhook at /stripe/webhook, and the stripe_event table in packages/db. Use when a feature takes money, when a Stripe event must be acted on, or when the Stripe configuration changes.
 ---
 
@@ -2151,11 +2151,11 @@ nothing to gain from a hop that can re-encode the bytes the signature covers.
 EOF
 ````
 
-The `code-db` skill owns the tables, so it says which one is Stripe's and why its key is what it
+The `project-db` skill owns the tables, so it says which one is Stripe's and why its key is what it
 is:
 
 ```diff
---- .claude/skills/code-db/SKILL.md
+--- .claude/skills/project-db/SKILL.md
  - **Never:** `apps/web` must not import `@__PROJECT__/db` — only the API Worker does. The
    dependency graph is the architecture; web reaches data through the API or not at all.
 +- **`stripeEvent` is keyed on Stripe's event id**, not a serial. That is not a style
@@ -2170,7 +2170,7 @@ is:
 The `graphql` skill gains the third thing this Worker serves, and the var rename:
 
 ```diff
---- .claude/skills/graphql/SKILL.md
+--- .claude/skills/project-graphql/SKILL.md
  - **A new feature gets a new module directory, not a line in someone else's.**
 -  `system/` is health/version/appEnv, `mail/` is sendTestEmail, `auth/` is the viewer.
 +  `system/` is health/version/appEnv, `mail/` is sendTestEmail, `auth/` is the viewer,
@@ -2202,7 +2202,7 @@ The `graphql` skill gains the third thing this Worker serves, and the var rename
 The `web` skill gains server actions and the third-party script, which are both new here:
 
 ```diff
---- .claude/skills/web/SKILL.md
+--- .claude/skills/project-web/SKILL.md
  - **`src/app/api/auth/[...all]/route.ts` is a transparent proxy to the API Worker**, and the
    browser must never call the API's own origin. Read the `auth` skill before touching it,
    `src/lib/auth-client.ts`, or `apiFetch`.
@@ -2243,7 +2243,7 @@ The `web` skill gains server actions and the third-party script, which are both 
 The `auth` skill has two rules naming a var that no longer exists:
 
 ```diff
---- .claude/skills/auth/SKILL.md
+--- .claude/skills/project-auth/SKILL.md
 -- **`BETTER_AUTH_URL` is the web origin**, never this Worker's. It is what Better Auth
 -  validates the browser's `Origin` against, and what `trustedOrigins` is built from.
 +- **`WEB_ORIGIN` is the web origin**, never this Worker's. It is what Better Auth validates

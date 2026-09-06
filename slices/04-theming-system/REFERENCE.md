@@ -795,9 +795,9 @@ the linter is the one that wins, so it stays the only copy.
 
 ````bash
 cd ../..   # to the repo root
-cat > .claude/skills/web/SKILL.md <<'EOF'
+cat > .claude/skills/project-web/SKILL.md <<'EOF'
 ---
-name: web
+name: project-web
 description: Change the __PROJECT__ Next.js app in apps/web — pages, components, typed GraphQL operations, and theming. Use when a feature needs UI, a new query from the web side, or a re-theme. Covers typed documents from codegen, the graphqlFetch boundary, the theme token contract, and the vendored shadcn checkout.
 ---
 

@@ -217,6 +217,24 @@ node_modules/
 EOF
 ```
 
+**If this skill is installed into the project as a symlink, ignore that one path — never
+`.claude/skills/` as a directory.** git stores a symlink as its target string, so committing
+`.claude/skills/setup-project` would write one machine's absolute directory layout into the repo
+and hand every other clone a dangling link. Add the exact path when that applies:
+
+```bash
+echo ".claude/skills/setup-project" >> .gitignore
+```
+
+Ignoring the whole directory instead is a trap worth naming, because it fails silently and late.
+From Slice 2 onward every slice writes its layer's operating manual to
+`.claude/skills/project-<layer>/SKILL.md`, and those **are** project source: they are referenced
+from `CLAUDE.md`, compared by `docs:check`, and useless to anyone who clones without them. A
+project that has hit this ends up with a committed `CLAUDE.md` pointing at an untracked file, and
+`docs:check` reports the manual as `not built yet` rather than erroring — a false negative for a
+slice that is built, from the one check meant to catch exactly this. Ignore the symlink; commit
+the manuals.
+
 (Ignore every env file, with exactly one exception: `.env.example`, which holds keys and dummy
 values only. Nothing else in the `.env` family is ever committed — see the convention below
 for how a production value reaches the build without a second committed file. The negation

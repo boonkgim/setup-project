@@ -50,9 +50,9 @@ plan that references a file it does not install is not self-contained.
   skills to reach for before writing code. They are not part of this plan and are not
   installed by it, so the paragraph naming them was dropped. The `diff` hunks that slices
   05–07 apply to `CLAUDE.md` anchor on the _following_ paragraph, so they still apply.
-- **`design-db`,** again, in slice 02's `code-db` skill description. Trailing clause removed.
-- **`code-ui`.** Slice 6 referenced it by relative path into the upstream repo's
-  `.claude/skills/`. It now ships as `assets/code-ui-SKILL.md`, is installed into
+- **`design-db`,** again, in slice 02's `project-db` skill description. Trailing clause removed.
+- **`project-ui`.** Slice 6 referenced it by relative path into the upstream repo's
+  `.claude/skills/`. It now ships as `assets/project-ui-SKILL.md`, is installed into
   the plan's `assets/` alongside the slices whenever 06 is selected, and slice 06 copies it
   from there.
 

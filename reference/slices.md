@@ -202,7 +202,7 @@ send mutation in `apps/graphql`, and a recipient allowlist.
 
 Better Auth in `apps/graphql` mounted before Yoga, generated auth tables in `packages/db`,
 the same-origin `/api/auth/[...all]` proxy in `apps/web`, the sign-in panel, and a `viewer`
-field. Also installs the `code-ui` skill from the plan's `assets/`.
+field. Also installs the `project-ui` skill from the plan's `assets/`.
 
 **Magic link is the default and the only method shipped** — no password field, no password
 column, no separate confirm-your-address step. The mailed link is the credential and the

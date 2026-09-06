@@ -598,9 +598,11 @@ page, same field, real data behind it. Commit.
 ## The operating manual for this layer
 
 The slice that builds a layer is where that layer's rules are discovered, so it is where they
-get written down. `.claude/skills/code-db/SKILL.md` — **or whatever the skills already in the project are called;
-match them rather than this path.** A project whose API slice installed `.claude/skills/graphql/`
-wants `.claude/skills/db/`, not `code-db`. It is what an agent — or a person — reads before
+get written down. `.claude/skills/project-db/SKILL.md`, following the naming rule every slice
+that installs a manual obeys: **`project-<layer>`, matching the `name:` in its frontmatter.**
+The prefix is not decoration — `db`, `web`, `auth` and `payments` are generic enough to collide
+with a skill in `~/.claude/skills/` or a plugin, and a collision does not announce itself: the
+wrong manual simply loads. It is what an agent — or a person — reads before
 touching the schema from here on: the generate/migrate rhythm, and the judgment calls no tool
 can catch, starting with the one that costs data.
 
@@ -610,9 +612,9 @@ rename generates as `DROP` + `ADD`. Anything an agent would get right unprompted
 
 ````bash
 cd ../..   # to the repo root
-cat > .claude/skills/code-db/SKILL.md <<'EOF'
+cat > .claude/skills/project-db/SKILL.md <<'EOF'
 ---
-name: code-db
+name: project-db
 description: Change the __PROJECT__ database schema in packages/db — tables, columns, indexes, migrations. Use when a feature needs new or changed data. Covers Drizzle schema edits, drizzle-kit generate/migrate, reviewing generated SQL before applying it, and the local Docker Postgres.
 ---
 

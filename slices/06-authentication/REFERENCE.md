@@ -1752,10 +1752,10 @@ that rots.
 
 ````bash
 cd ../..
-mkdir -p .claude/skills/auth
-cat > .claude/skills/auth/SKILL.md <<'EOF'
+mkdir -p .claude/skills/project-auth
+cat > .claude/skills/project-auth/SKILL.md <<'EOF'
 ---
-name: auth
+name: project-auth
 description: Work with authentication in __PROJECT__ — magic-link sign-in, sessions, the Better Auth server in apps/graphql, the same-origin proxy in apps/web, and the generated auth tables in packages/db. Use when a feature needs to know who the visitor is, when a resolver or page must be restricted, or when the auth configuration changes.
 ---
 
@@ -1889,11 +1889,11 @@ failure mode — everything typechecks and the runtime queries a column that doe
 EOF
 ````
 
-The `code-db` skill owns the tables, so it is the one that has to say four of them are no longer
+The `project-db` skill owns the tables, so it is the one that has to say four of them are no longer
 hand-written:
 
 ```diff
---- .claude/skills/code-db/SKILL.md
+--- .claude/skills/project-db/SKILL.md
  - **Owns:** `src/schema.ts` is the source of truth for every table. Nothing else defines
    one. Also owns `migrations/` and the client factory in `src/client.ts`.
 +- **Except the auth tables.** `src/auth-schema.ts` — `user`, `session`, `account`,
@@ -1912,7 +1912,7 @@ are acting for_ lands here, in the layer that would otherwise read the account o
 and foreclose delegated access for good:
 
 ```diff
---- .claude/skills/graphql/SKILL.md
+--- .claude/skills/project-graphql/SKILL.md
  - **Owns:** SDL modules at `src/schema/<module>/schema.graphql`, with resolvers colocated
 -  at `src/schema/<module>/resolvers/Query/<field>.ts`. Also the merged
 +  at `src/schema/<module>/resolvers/{Query,Mutation}/<field>.ts`. Also the merged
@@ -1980,7 +1980,7 @@ component — that `graphqlFetch` forwards the cookie, and that a client-side si
 server-read `viewer` stale:
 
 ```diff
---- .claude/skills/web/SKILL.md
+--- .claude/skills/project-web/SKILL.md
  - **Never edits `src/generated/**`** — regenerated from the API's merged SDL.
 +- **`src/app/api/auth/[...all]/route.ts` is a transparent proxy to the API Worker**, and the
 +  browser must never call the API's own origin. Read the `auth` skill before touching it,
@@ -2004,7 +2004,7 @@ confirms an address is a nicety; a mail that signs you in is a credential, and t
 follow from that are not obvious from reading the component:
 
 ```diff
---- .claude/skills/email/SKILL.md
+--- .claude/skills/project-email/SKILL.md
  - **Owns:** `emails/*.tsx` (templates), `src/render.tsx` (subject + html + text),
    `src/mailer.ts` (transports). Exported through `src/index.ts`.
 +- **`emails/sign-in-email.tsx` is a credential, not a notification.** From Slice 6 it
@@ -2022,7 +2022,7 @@ rewritten. If it reads differently in your repo, re-anchor rather than forcing i
 `docs:check` reports a hunk that stops applying as a hard error naming the file, which is
 exactly what it is for.
 
-### The `code-ui` skill
+### The `project-ui` skill
 
 The first version of the panel rendered Better Auth's `error.message` straight into one
 form-level slot, which put a zod report on the request body — `[body.email] Invalid email
@@ -2031,12 +2031,12 @@ rules behind it were not, and none of them are specific to this panel. They live
 of their own rather than in the component.
 
 ```bash
-mkdir -p .claude/skills/code-ui
-cp __DOCS__/assets/code-ui-SKILL.md .claude/skills/code-ui/SKILL.md
+mkdir -p .claude/skills/project-ui
+cp __DOCS__/assets/project-ui-SKILL.md .claude/skills/project-ui/SKILL.md
 ```
 
 The skill ships with this plan, at
-[`__DOCS__/assets/code-ui-SKILL.md`](assets/code-ui-SKILL.md). It covers UI
+[`__DOCS__/assets/project-ui-SKILL.md`](assets/project-ui-SKILL.md). It covers UI
 work generally — reusing the vendored components, semantic tokens, the server/client
 boundary, the four states every async surface owes, accessibility, message wording, and
 layout that does not move. The two rules that shape the panel above are that a message
@@ -2047,10 +2047,10 @@ the visitor is already reaching for.
 The `web` skill defers to it, because a component is where the rules get reached for:
 
 ```diff
---- .claude/skills/web/SKILL.md
+--- .claude/skills/project-web/SKILL.md
  ## Judgment calls
 
-+- **Writing any component, page, or form: read the `code-ui` skill first.** It owns how UI
++- **Writing any component, page, or form: read the `project-ui` skill first.** It owns how UI
 +  is written here — reusing the vendored components, tokens, the server/client boundary,
 +  loading and error states, accessibility, messages, and layout that does not shift.
  - **No component ever names a colour.** Semantic tokens only: `bg-background`,
