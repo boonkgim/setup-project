@@ -92,7 +92,8 @@ can name the TypeScript source directly and no build step is needed; wrangler, v
 Cloudflare recommends **node-postgres (`pg`)** over `postgres.js` — best compatibility with
 Hyperdrive's query caching — and its stated minimum has moved: **≥ 8.16.3** as of 2026-08, up
 from 8.13. Re-read the floor rather than trusting this number; the page also moved, to
-`.../connect-to-postgres/postgres-drivers-and-libraries/node-postgres/`.
+`.../connect-to-postgres/postgres-drivers-and-libraries/node-postgres/`. Still 8.16.3 when
+last read (2026-09-06), against which `pnpm add pg` resolved 8.23.0 — no pin needed.
 
 Cloudflare's own sample now builds a bare `Client` per request rather than a `Pool`. Keep the
 `Pool` below: `maxUses: 1` is the same contract (a connection used once, then discarded) while
@@ -368,7 +369,7 @@ Docker must be up — that's the contract of `test:integration`.
 
 That is the infrastructure half proven: migrations apply and a row round-trips, without
 anything downstream needing to exist. The rest of this slice is the other half a horizontal
-slice owes — that the new layer works _integrated_ with what is already built. Slice 3's
+slice owes — that the new layer works _integrated_ with what is already built. Slice 2's
 Worker currently answers `health` out of thin air; by the end of this section it answers out
 of Postgres, and that rewrite is the whole proof.
 
@@ -378,7 +379,7 @@ pnpm add @__PROJECT__/db@workspace:*
 ```
 
 Add the Hyperdrive binding by rewriting `apps/graphql/wrangler.jsonc`'s binding block by hand
-— Slice 3 stopped owning that file whole, and `scripts/docs-check.ignore` already says so.
+— Slice 2 stopped owning that file whole, and `scripts/docs-check.ignore` already says so.
 Locally `wrangler dev` ignores `id` entirely and dials `localConnectionString`, which points at
 the Docker Postgres above. `id` is still a **required** key even for purely local development,
 which is why a placeholder goes in now rather than the key being left out until production:
@@ -393,7 +394,7 @@ which is why a placeholder goes in now rather than the key being left out until 
   ],
 ```
 
-**Hyperdrive is a binding on a Worker, which is why it is configured here and not in Slice 3.**
+**Hyperdrive is a binding on a Worker, which is why it is configured here and not in Slice 2.**
 It is a connection pooler that fronts _this_ database for _that_ Worker, so it could not exist
 before both did. It is this slice's integration step in the most literal sense: the object that
 joins the two layers.
@@ -450,7 +451,7 @@ EOF
 suite runnable with neither Docker nor a stub connection string. Splitting the two fields by
 what they can honestly reach is what keeps both suites truthful.
 
-And the Worker's own integration test, which Slice 3 had no way to write:
+And the Worker's own integration test, which Slice 2 had no way to write:
 
 ```bash
 cat > src/index.int.test.ts <<'EOF'
@@ -497,7 +498,7 @@ cd ../..   # back to the repo root
 | `apps/graphql` | `pnpm dev`                  | `{ health }` round-trips through Postgres                        |
 | root           | `pnpm typecheck`            | pass                                                             |
 | root           | **`pnpm lint`**             | **`5 successful`** — 3 lint (web, graphql, db) + 2 `codegen`     |
-| root           | **`pnpm test:unit`**        | **`Tests 19 passed`** — unchanged; nothing here is unit-testable |
+| root           | **`pnpm test:unit`**        | **unchanged from slice 2** — this slice adds no unit tests        |
 | root           | **`pnpm test:integration`** | **`Tests 2 passed`** — db round-trip + health-through-Postgres   |
 
 The browser row is the one that matters, and it is why this slice reads as integration rather
@@ -568,15 +569,30 @@ Neon's string can go to Hyperdrive with its `?sslmode=require&channel_binding=re
 intact — no need to strip the parameters.
 
 **Getting the string out of the Neon console without pasting it anywhere.** Turn
-**Connection pooling off** in the Connect dialog — the pooled host contains `-pooler` and the
-direct one does not, which is the quickest confirmation you have the right one. **Copy snippet**
-puts the real string on the clipboard (not the masked form shown on screen), so on Linux
-`xclip -selection clipboard -o` moves it console → file without going through a shell history.
+**Connection pooling off** in the Connect dialog — it defaults **on**, so this is a change you
+have to make, not a default to confirm. The pooled host contains `-pooler` and the direct one
+does not. **Copy snippet** puts the real string on the clipboard (not the masked form shown on
+screen), so on Linux `xclip -selection clipboard -o` moves it console → file without going
+through a shell history.
+
+**Verify on the file, never on the toggle.** The dialog's pooling switch reports the accessible
+name `"on"` whether it is on or off, so neither a screenshot nor a scoped accessibility read
+settles which endpoint you copied — and this is the one place in the slice where being wrong is
+both easy and silent, since a pooled string connects perfectly well and only misbehaves under
+load. Write the file first, then let `grep` answer:
+
+```bash
+grep -q -- '-pooler' .env.production && echo "POOLED — wrong one" || echo "direct — correct"
+```
+
+That check is also what makes this step safe for an agent to drive: the string goes clipboard →
+file through a pipe and the verdict is a word, so nothing ever renders the credential. See
+SKILL.md §2b.
 
 Use Neon's **direct (unpooled)** string — the same one just written to
 `packages/db/.env.production`. Hyperdrive is itself the pooler; stacking it on Neon's pooled
 endpoint is discouraged. `nodejs_compat` with a compatibility date ≥ 2024-09-23 is required for
-the `pg` driver, already satisfied by Slice 3's config, and Hyperdrive's caching does not take
+the `pg` driver, already satisfied by Slice 2's config, and Hyperdrive's caching does not take
 effect locally — expected, not a misconfiguration.
 
 Redeploy the Worker so production picks up the binding. API before web is the standing rule,
@@ -592,7 +608,7 @@ rather than redeploying web out of caution.
 
 **Production gate:** `pnpm migrate:production` applies cleanly to Neon and re-running it is a
 no-op — drizzle-kit's journal is the proof it landed and is not re-applied — and the production
-page from Slice 3 now shows `health` as `ok:db`, served through Hyperdrive from Neon. Same
+page from Slice 2 now shows `health` as `ok:db`, served through Hyperdrive from Neon. Same
 page, same field, real data behind it. Commit.
 
 ## The operating manual for this layer

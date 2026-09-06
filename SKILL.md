@@ -159,7 +159,8 @@ Two rules govern the probes wherever they are written:
 Probes settle facts; they cannot settle decisions. *Which* of several Cloudflare accounts the
 Worker belongs in is the operator's call. So is spending money, sending real mail, and creating
 an account that does not exist. Ask about those, once, and never about anything a probe
-answered.
+answered — and when the answer is "create it", ask it as the offer below rather than as a
+question that hands the whole errand back.
 
 ### When a probe comes back missing
 
@@ -173,6 +174,45 @@ Say **which round each one unblocks**, because that decides whether the slice wa
 runtime blocks everything; Docker blocks Round 1 for the slice that needs it; an account that
 does not exist usually blocks only Round 2, and the local half can still be built, gated and
 committed with Round 2 reported as deferred.
+
+### Offer to drive the browser steps
+
+Some of what `USER-SETUP.md` asks for is a browser errand rather than a decision: click through
+a signup, name a project, leave a toggle off, open the connection panel. Handing that to the
+user as a numbered list is the right fallback, but it is not the only thing on offer when the
+Chrome tools are available — they drive the user's **own** logged-in Chrome, so an account made
+through them is made in their session, with their cookies, exactly as if they had clicked it.
+
+**Check, then offer, then wait for a yes.** Availability is a fact — the `mcp__claude-in-chrome__*`
+tools are present, or they are not, and if they are deferred, loading them is one `ToolSearch`
+call. Do not offer what you cannot do, and do not ask the user whether you have a tool. But do
+not skip the offer either, because "creating an account is the user's job" is a claim about
+_authority_, not about clicking, and only the authority part is true. So make it a single offer
+alongside the written steps, naming what you would do and where you would stop, and act only on
+an explicit yes. Signing up for a service is outward-facing and creates a real relationship in
+the user's name; it is theirs to authorise, once, before you start.
+
+**Drive up to the handover points and stop.** Four things are never yours to type, however
+convenient it would be, and each one ends your turn rather than pausing it:
+
+- the user's own credentials — an email address, a password, a passkey prompt;
+- a code that proves they hold something — an emailed link, an OTP, a 2FA app;
+- an OAuth or permissions consent screen, which is the moment the grant is actually made;
+- anything that attaches a payment method or leaves a free tier.
+
+At each, say what is on screen and precisely what you need typed, then hand the keyboard back.
+Resume when they say it is done — do not poll the page in a loop waiting for a human.
+
+**A value read off a page is still a secret.** §6's rule does not relax because the credential
+arrived through a screenshot instead of a pipe: a connection string or an API key goes from the
+browser into the gitignored env file the slice names, and never into a message, a heredoc you
+echo, or a screenshot you keep. If you cannot move it without rendering it, that step is the
+user's — say so and let them paste it.
+
+**Declined, unavailable, or stuck is not a blocker.** Fall back to the written steps from
+`USER-SETUP.md` exactly as above. The browser offer replaces nothing; it is a faster path
+through the same list, and the same "stop and ask after 2–3 failed attempts" rule that governs
+every other browser task governs this one.
 
 ## 3. Research what is currently true
 
@@ -301,8 +341,10 @@ the user has agreed to; some cost money or send real email, so say which before 
 **`browser` rows.** Drive them yourself with the Chrome browser tool when it is available —
 navigate, click, read the rendered page, console and network — rather than describing what
 should happen or asking the user to check it manually. Reserve asking the user for what
-actually requires a human: completing an OAuth consent screen, or creating or configuring an
-account (Cloudflare, Neon, Resend, Stripe) with credentials only the user holds.
+actually requires a human — and that is narrower than it looks. Completing an OAuth consent
+screen is theirs, as is typing a credential or a 2FA code. *Creating* an account (Cloudflare,
+Neon, Resend, Stripe) is theirs to **authorise**, but once authorised the clicking is yours:
+§2b's browser offer is the mechanism, and its handover points are the same four listed there.
 
 **Credentials: the line is live-versus-test, not agent-versus-human.** A `sk_test_` key cannot
 charge anyone, and by this point in the slice it is already sitting in plaintext in
