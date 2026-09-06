@@ -25,7 +25,7 @@ pnpm create next-app@latest web --src-dir --ts --app --tailwind --eslint \
 cd web
 ```
 
-**Checked against `create-next-app@16.3.3`** — every flag above still exists in the 16 line
+**Checked against `create-next-app@16.3.4`** — every flag above still exists in the 16 line
 and still means what it says. What _moved_ is worth knowing anyway, because it is what breaks
 an older recipe copied forward: `--turbopack` is gone, since Turbopack is now the default
 bundler and `--rspack` is the way out of it; `--biome` has joined `--eslint` as a linter
@@ -83,13 +83,28 @@ pnpm add -D @types/node@catalog:     # and again: it scaffolds ^20 while .nvmrc 
 ```
 
 **The adapter and Next are pinned to each other far more tightly than two `@latest`s
-suggest.** `@opennextjs/cloudflare@1.20.4` declares `next: ">=15.5.24 <16 || >=16.3.3"` and
-`wrangler: "^4.125.0"`, and `create-next-app@latest` currently scaffolds Next **16.3.3** — the
-exact bottom edge of that upper range. The hole in the middle is real: every Next 16 before
+suggest.** `@opennextjs/cloudflare@1.20.6` declares `next: ">=15.5.24 <16 || >=16.3.3"` and
+`wrangler: "^4.125.0"`, and `create-next-app@latest` currently scaffolds Next **16.3.4** — one
+patch above the bottom edge of that upper range. The hole in the middle is real: every Next 16 before
 16.3.3 is unsupported by this adapter. Two `@latest`s happening to agree today is luck, not a
 guarantee, so check the _pair_ rather than either half — if a pinned or cached invocation ever
 hands you 16.0–16.3.2, the install succeeds and the failure surfaces later, in the OpenNext
 build, saying nothing about versions.
+
+**Cloudflare's own framework guide no longer documents this path — check whether that has
+become a real deprecation before building.** `developers.cloudflare.com/workers/framework-guides/web-apps/nextjs/`
+now presents **vinext** as the recommended way to run Next.js on Workers, and mentions OpenNext
+only in a table, "when you maintain an existing OpenNext application that cannot yet migrate to
+vinext because of a compatibility gap". As of 2026-09-06 that is steering, not deprecation, and
+two checks are what tell the difference: vinext's newest release is `1.0.0-beta.9` — pre-1.0, so
+not a foundation for a production stack — while `@opennextjs/cloudflare` published 1.20.6 on
+2026-09-02, with a peer range that already names Next 16.3.x. An actively released adapter beats
+a beta the vendor is steering toward. Re-run both checks (`npm view vinext version`, `npm view
+@opennextjs/cloudflare time.modified`) rather than inheriting this verdict: if vinext reaches a
+stable 1.0 and OpenNext goes quiet, the answer flips, and it flips most cheaply at this slice —
+every later slice stacks on the adapter. This is also why the Cloudflare guide is no longer the
+source for the config blocks below; `opennext.js.org` is, and it still specifies every value in
+the `wrangler.jsonc` above.
 
 Verify the workspace is single-rooted before moving on — one lockfile, and `next` resolved
 through the root store:
@@ -124,7 +139,7 @@ cat > wrangler.jsonc <<'EOF'
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "__PROJECT__-web",
   "main": ".open-next/worker.js",
-  "compatibility_date": "2026-08-28",
+  "compatibility_date": "2026-09-03",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
   "images": { "binding": "IMAGES" },
@@ -146,8 +161,9 @@ Two of those values are research output rather than copies of the reference.
 
 **`compatibility_date` is capped by the workerd you have, not by today's date.** A runtime
 cannot implement a compatibility date it was built before, so asking for one past its build
-is an error rather than a forward-compatible request. wrangler 4.127.1 depends on
-`workerd@1.20260828.1`, which is where `2026-08-28` comes from — not from the calendar. Read
+is an error rather than a forward-compatible request. wrangler 4.129.0 depends on
+`workerd@1.20260903.1`, which is where `2026-09-03` comes from — not from the calendar.
+Read it off `npm view wrangler@<version> dependencies` every time; it is never today's date. Read
 it as a floor you raise on purpose when you upgrade wrangler, which is the entire point of
 the field: bumping it is how you opt into changed runtime behaviour deliberately instead of
 inheriting it on a redeploy.
@@ -220,7 +236,7 @@ Slice 0's own prose has been amended to match — the convention it states is th
 was wrong, so leaving the correction only here would let the next package reintroduce it.
 
 **`type: "module"` is set here and is not cosmetic.** create-next-app omits it, which leaves
-`apps/web` a CommonJS package containing `vitest.config.ts` written in ESM. Vitest 4 loads
+`apps/web` a CommonJS package containing `vitest.config.ts` written in ESM. Vitest 5 loads
 that file and warns:
 
 ```
@@ -557,6 +573,26 @@ alone. `cd ../..` gets you back.
 **Production gate** — from `apps/web`: `pnpm deploy:production` → the
 `__PROJECT__-web.<account>.workers.dev` URL renders. Commit.
 
+**Expect the first load to be a lie.** On a `workers.dev` subdomain being served for the very
+first time, the route takes a moment to propagate, and until it does Cloudflare answers with its
+own branded `There is nothing here yet — if you expect something to be here, it may take some
+time` page. It is HTML, it is styled, and it arrives in place of your app, so it reads exactly
+like a broken deploy — but `wrangler` has already printed `Deployed` and a version id by then,
+and nothing is wrong. Poll the URL until it answers 200 rather than concluding anything from one
+look:
+
+```bash
+for i in $(seq 1 10); do
+  code=$(curl -s -o /dev/null -w "%{http_code}" https://__PROJECT__-web.<account>.workers.dev/)
+  echo "attempt $i: $code"; [ "$code" = "200" ] && break; sleep 15
+done
+```
+
+Then hard-reload the browser, or add a throwaway query string: a browser pointed at the URL
+early will keep showing the cached placeholder long after `curl` reports 200, which is the same
+false negative a second time. Only the placeholder is affected — this is not a reason to
+distrust a `200` once you have one.
+
 **Why the script is not just called `deploy`.** `deploy` is a _built-in pnpm command_
 (`pnpm --filter=<project> deploy <target directory>` — it copies a workspace package into a
 directory), so it is the one obvious script name in this repo that collides with pnpm itself.
@@ -582,6 +618,9 @@ are claims about a registry that moves. `changelog/` records what changed here a
 
 - [OpenNext Cloudflare get-started](https://opennext.js.org/cloudflare/get-started)
 - [Next.js on Workers · Cloudflare framework guide](https://developers.cloudflare.com/workers/framework-guides/web-apps/nextjs/)
+  — **no longer a source for this slice's config**: it documents vinext now, not OpenNext. Kept
+  in the list because knowing it moved is the finding, and re-reading it is how you learn when
+  the verdict above flips.
 - [Next.js environment variables](https://nextjs.org/docs/app/guides/environment-variables)
 
 ## Leaves behind
