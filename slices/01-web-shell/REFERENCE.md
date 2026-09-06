@@ -91,20 +91,45 @@ guarantee, so check the _pair_ rather than either half — if a pinned or cached
 hands you 16.0–16.3.2, the install succeeds and the failure surfaces later, in the OpenNext
 build, saying nothing about versions.
 
-**Cloudflare's own framework guide no longer documents this path — check whether that has
-become a real deprecation before building.** `developers.cloudflare.com/workers/framework-guides/web-apps/nextjs/`
-now presents **vinext** as the recommended way to run Next.js on Workers, and mentions OpenNext
-only in a table, "when you maintain an existing OpenNext application that cannot yet migrate to
-vinext because of a compatibility gap". As of 2026-09-06 that is steering, not deprecation, and
-two checks are what tell the difference: vinext's newest release is `1.0.0-beta.9` — pre-1.0, so
-not a foundation for a production stack — while `@opennextjs/cloudflare` published 1.20.6 on
-2026-09-02, with a peer range that already names Next 16.3.x. An actively released adapter beats
-a beta the vendor is steering toward. Re-run both checks (`npm view vinext version`, `npm view
-@opennextjs/cloudflare time.modified`) rather than inheriting this verdict: if vinext reaches a
-stable 1.0 and OpenNext goes quiet, the answer flips, and it flips most cheaply at this slice —
-every later slice stacks on the adapter. This is also why the Cloudflare guide is no longer the
-source for the config blocks below; `opennext.js.org` is, and it still specifies every value in
-the `wrangler.jsonc` above.
+**Cloudflare's own framework guide no longer documents this path, and choosing to stay is a
+decision this slice makes on purpose.** `developers.cloudflare.com/workers/framework-guides/web-apps/nextjs/`
+now presents **vinext** — Cloudflare's own `github.com/cloudflare/vinext` — as the recommended
+way to run Next.js on Workers, and mentions OpenNext only "when you maintain an existing OpenNext
+application that cannot yet migrate to vinext because of a compatibility gap". That is a
+first-party vendor steering off the adapter this slice installs, so read the next two paragraphs
+before running any of it. **This slice is the cheapest place to switch and the most expensive
+place to get it wrong:** `apps/web` holds one page and one pure function here, while every later
+slice stacks on the adapter — 04's theming, 06's auth proxy route, 07's mounted Checkout form.
+
+**As of 2026-09-06 the answer is: stay on OpenNext.** Not because vinext is unfinished — because
+of what sits underneath it. vinext replaces the Next CLI with Vite rather than wrapping
+`next build`, and it peers `@vitejs/plugin-rsc: ^0.5.x` — a **0.x package in the rendering
+critical path**. That is a beta resting on an alpha, and it is a different risk from a beta
+version number. The vendor's own README says it plainly: "not yet a drop-in replacement for every
+application or production workload ... Expect compatibility gaps, especially in newer App Router
+features." Three named gaps touch this stack directly: images and fonts "lack Next.js's complete
+build-time pipeline" (optimization is request-time only, and the `images` binding below exists
+because the scaffolded page renders `next/image`), `"use cache"` is partially implemented, and
+`sharp`/`satori` may fail in RSC dev mode. Against that, `@opennextjs/cloudflare` is actively
+released and peers cleanly against current Next.
+
+**Re-derive this rather than inheriting it — the verdict is dated, and the checks are cheap:**
+
+```bash
+npm view vinext version                          # stable 1.x, or still 1.0.0-beta.N?
+npm view @vitejs/plugin-rsc version              # the load-bearing 0.x underneath it
+npm view @opennextjs/cloudflare time.modified    # is the incumbent still shipping?
+```
+
+**The trigger to switch is both of the first two reaching a stable 1.x**, not either alone, and
+not vinext's own coverage claim. Download counts are not evidence here: vinext already outruns
+OpenNext weekly (1.52M vs 1.24M as of 2026-08-29), which a seven-month-old beta does not do
+organically — that is transitive and CI traffic, and reading adoption into it would be a mistake.
+If the checks flip, raise it with the user as a decision rather than switching silently; the
+stack this skill builds is fixed, and changing the adapter changes it.
+
+This is also why the Cloudflare guide is no longer the source for the config blocks below;
+`opennext.js.org` is, and it still specifies every value in the `wrangler.jsonc` above.
 
 Verify the workspace is single-rooted before moving on — one lockfile, and `next` resolved
 through the root store:
