@@ -1618,11 +1618,11 @@ check `ss -ltnp | grep 8787` names the Worker you just started.
 | ---------- | ------------------------------------------------------ | ---------------------------------------------------------------------------- |
 | browser    | `localhost:3000`                                       | `last stripe event` reads `none yet`; the link is there                      |
 | browser    | **Buy the test item**                                  | `/checkout`, Stripe's form inline, address bar still `:3000`                 |
-| browser    | the form's iframe                                      | `$19.00`, one line item                                                      |
+| browser    | the form's iframe                                      | one line item; `US$19.00` — possibly beside a local currency, see below      |
 | terminal   | `stripe trigger checkout.session.completed`            | one `200` in `stripe listen`, and one new row                                |
 | browser    | `/checkout/return?session_id=<that trigger's session>` | "Thank you" — the `COMPLETE` branch, with no card typed                      |
 | browser    | `/checkout/return?session_id=<any still-open session>` | "Nothing was charged" — the `OPEN` branch, likewise                          |
-| terminal   | the same event replayed from the Stripe CLI            | `"duplicate":true`, and **no** second row                                    |
+| terminal   | `stripe events resend <that evt_…>`                    | a second `200` in `stripe listen`, still **one** row, `received_at` unchanged |
 | terminal   | `curl -X POST localhost:8787/stripe/webhook -d '{}'`   | `400`, and nothing written                                                   |
 | browser    | `/checkout/return?session_id=cs_test_nonsense`         | the red "Could not read that checkout", not a crash                          |
 | `apps/web` | `pnpm preview --port 3000`                             | same under workerd                                                           |
@@ -1656,17 +1656,35 @@ counterpart for the new public read: `checkoutSessionStatus` takes an id from a 
 Rows eight and nine are the pair. A webhook handler that records duplicates looks identical to
 a correct one until Stripe's first retry, which happens on their schedule and not yours.
 
+**`stripe events resend` needs no `--webhook-endpoint` locally.** With `stripe listen` running
+it re-delivers through the forwarder, so the local gate gets the same idempotency check the
+production gate runs — and against the CLI's real signing secret rather than a test double.
+Read `received_at`, not just the row count: a handler that deleted and re-inserted would also
+leave one row, and only an unchanged timestamp rules that out. That is the same reasoning the
+production gate's resend row gives, and there is no reason to postpone it to production.
+
 Row seven is new to embedded and cannot be skipped. With no `cancel_url`, a declined card is
 the only way to reach the `OPEN` branch of the return page, and that branch is the one that
 would otherwise tell someone their failed payment succeeded.
 
-Three things will look wrong and are not. The form does not follow the mode toggle — it is
+**A currency chooser is not a bug.** Stripe's `adaptive_pricing` is enabled by default, so an
+account whose country is not the US renders a **Choose currency** selector above the form with
+the local currency preselected and a converted amount — `SGD 25.02` beside `US$19.00` on a
+Singapore account, with the rate spelled out underneath. The session still carries the 1900 USD
+cents this repo sends; adaptive pricing is a presentation layer over it, and `amount_total`
+stays `1900`. Read the row above as "one line item, and `US$19.00` is one of the options
+offered" rather than "`$19.00` and nothing else". Turn it off on the session with
+`adaptive_pricing: { enabled: false }` if a single currency matters more than local pricing.
+
+Four things will look wrong and are not. The form does not follow the mode toggle — it is
 Stripe's iframe, themed from the account's dashboard branding, not from `theme.css`.
 `view-source` on `/checkout` shows the `pk_test_…` key inline; that is what a publishable key
 is for. And under `pnpm preview` the card paints with an **empty** form area for several
-seconds before the iframe mounts — measured at roughly five under workerd, against under one
-in `next dev`. That is latency, not the "fails blank" failure: check the console before
-chasing it, because a real key or session failure logs there and this does not.
+seconds before the iframe mounts — between five and twenty under workerd depending on the
+machine, against a second or two in `next dev`. Do not treat any particular figure as the
+expected one; treat the console as the discriminator. That delay is latency, not the "fails
+blank" failure: a real key or session failure logs an error there, and this logs only Stripe's
+informational "You may test your Stripe.js integration over HTTP" notice.
 
 `preview` runs on port 3000 with `next dev` stopped, for Slice 6's reason: `WEB_ORIGIN` names
 `localhost:3000`, and the return URL is built from whatever that says.
@@ -1903,6 +1921,20 @@ On the deployed **web** URL, never the API's.
 | `curl -X POST https://…workers.dev/stripe/webhook -d '{}'` | `400 Invalid signature`                                   |
 | **Buy the test item**, pay with `4000 0000 0000 9995`      | declined inline; no new event row                         |
 
+**Hyperdrive caches reads, so the row will not appear when you first look.** Its query cache
+is on by default with a 60-second TTL, and the gate's shape — read `stripeEvents`, deliver an
+event, read it again — is exactly the shape that gets a stale answer: the second read is served
+from the first. The symptom is an empty list for up to a minute after a delivery that returned
+`200`, which is indistinguishable from a webhook that silently wrote nothing, and it sends you
+to the wrong row of the failure table below.
+
+Do not read the table as evidence until you have either waited out the TTL or confirmed the
+delivery another way. `wrangler tail` is the faster confirmation and the one worth reaching for
+first — a `POST /stripe/webhook` with `"outcome":"ok"`, status `200` and no `console.error`
+means verification passed and the insert ran, whatever the query says. Set
+`caching: { disabled: true }` on the Hyperdrive binding if a stale read is worse for this
+project than the pooling win, but do not change it merely to make this gate quicker.
+
 The resend row is the one that could not be proven locally against the real endpoint secret,
 and it is the difference between a handler that is idempotent and one that has not been asked
 yet. Prefer the CLI's `--webhook-endpoint` form over the dashboard's Resend button: it names
@@ -1950,7 +1982,7 @@ Row two is the row this slice's change exists for. If the address bar ever reads
 | no deliveries at all, and no endpoint in `list`            | step 4 landed on a different account than step 1's keys                |
 | a delivery `500`, `relation "stripe_event" does not exist` | step 5 never ran against the production database                       |
 | deliveries `404`                                           | step 6 not run, or the endpoint URL names the web Worker               |
-| `200`, but the row never appears                           | the insert conflicted — check whether the id is already in the table   |
+| `200`, but the row never appears                           | **first** suspect Hyperdrive's 60s read cache, not the insert; then check whether the id is already in the table |
 | the web deploy fails on an unresolved `API` binding        | step 6 out of order                                                    |
 
 ```bash
@@ -2183,7 +2215,7 @@ The `graphql` skill gains the third thing this Worker serves, and the var rename
 +- **Resolvers import drizzle operators from `@__PROJECT__/db`, not `drizzle-orm`.** This app has
 +  no drizzle dependency; `packages/db` re-exports what a resolver needs.
 @@
-   distinguishable errors are an enumeration oracle. The `auth` skill holds the check itself.
+   enumeration oracle. The `auth` skill holds the check itself.
 +- **A public list field needs its own ceiling.** An SDL default is a default, not a limit —
 +  clamp the argument in the resolver, as `stripeEvents` does.
 +- **Prefer an enum to a String for a closed set.** `CheckoutStatus` is three values, so the
@@ -2191,12 +2223,14 @@ The `graphql` skill gains the third thing this Worker serves, and the var rename
  - **The local env file is `.env.development`, and `--env-file` on `dev` is what points
 @@
  - `wrangler.jsonc` carries production-only `vars` — today `CORS_ORIGINS`, `APP_ENV`, the
--  mail keys and `BETTER_AUTH_URL`.
-+  mail keys, `WEB_ORIGIN` and `STRIPE_MODE`.
+-  mail keys and `BETTER_AUTH_URL`. `wrangler dev` overlays `.env.development` on top, which
++  mail keys, `WEB_ORIGIN` and `STRIPE_MODE`. `wrangler dev` overlays `.env.development` on top, which
+   is what keeps a localhost origin out of the deployed allowlist. Don't merge the two. Any
 @@
--  (`src/index.int.test.ts`, `src/auth.int.test.ts`). Run it with `pnpm test:integration`, after
-+  (`src/index.int.test.ts`, `src/auth.int.test.ts`, `src/stripe-webhook.int.test.ts`). Run it
-+  with `pnpm test:integration`, after
+   against real Postgres: `src/index.int.test.ts` (Slice 3) and `src/auth.int.test.ts`
+-  (Slice 6). Both need `docker compose up -d`.
++  (Slice 6) and `src/stripe-webhook.int.test.ts` (Slice 7). All need
++  `docker compose up -d`.
 ```
 
 The `web` skill gains server actions and the third-party script, which are both new here:
@@ -2250,9 +2284,10 @@ The `auth` skill has two rules naming a var that no longer exists:
 +  the browser's `Origin` against, what `trustedOrigins` is built from, and — since Slice 7 —
 +  where Stripe Checkout returns the visitor. One value, one name.
 @@
- - **The verification link is built from `baseURL`**, so it lands on the web origin and is
--  proxied back. Nothing works if `BETTER_AUTH_URL` names the API Worker.
-+  proxied back. Nothing works if `WEB_ORIGIN` names the API Worker.
+-- **The link is built from `baseURL`**, so it lands on the web origin and is proxied back.
+-  Nothing works if `BETTER_AUTH_URL` names the API Worker — it mails a dead link.
++- **The link is built from `baseURL`**, so it lands on the web origin and is proxied back.
++  Nothing works if `WEB_ORIGIN` names the API Worker — it mails a dead link.
 ```
 
 ## The docs:check baseline
