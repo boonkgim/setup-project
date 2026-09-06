@@ -40,15 +40,15 @@ pnpm add -D typescript@catalog:   # not bare `typescript` — that resolves npm'
 **Pin `graphql`'s major rather than taking npm's `latest`.** graphql is on 17.x and is now
 `latest`, so a bare `pnpm add graphql` crosses a major without saying so, and this package's
 version is the one every later slice inherits. Check the peer ranges before choosing — as of
-2026-08-31 every tool in the chain accepts 17:
+2026-09-06 every tool in the chain accepts 17:
 
 | Package                                    | Version | `graphql` peer                      |
 | ------------------------------------------ | ------- | ----------------------------------- |
 | `graphql`                                  | 17.0.2  | —                                   |
 | `graphql-yoga`                             | 5.22.0  | `^15.2.0 \|\| ^16.0.0 \|\| ^17.0.0` |
-| `@graphql-codegen/cli`                     | 7.3.1   | `… \|\| ^16.0.0 \|\| ^17.0.0`       |
+| `@graphql-codegen/cli`                     | 7.4.0   | `… \|\| ^16.0.0 \|\| ^17.0.0`       |
 | `@graphql-codegen/client-preset`           | 6.1.3   | `… \|\| ^16.0.0 \|\| ^17.0.0`       |
-| `@eddeee888/gcg-typescript-resolver-files` | 0.18.4  | `^15.0.0 \|\| ^16.0.0 \|\| ^17.0.0` |
+| `@eddeee888/gcg-typescript-resolver-files` | 0.19.0  | `^15.0.0 \|\| ^16.0.0 \|\| ^17.0.0` |
 | `@graphql-tools/schema`                    | 10.1.0  | `^14.0.0 \|\| … \|\| ^17.0.0`       |
 | `@graphql-tools/utils`                     | 12.0.0  | `^14.0.0 \|\| … \|\| ^17.0.0`       |
 
@@ -265,7 +265,7 @@ makes the layout scale — a new feature adds `src/schema/<feature>/schema.graph
 
 ```bash
 pnpm add -D @graphql-codegen/cli
-pnpm add -D --save-exact @eddeee888/gcg-typescript-resolver-files@0.18.4
+pnpm add -D --save-exact @eddeee888/gcg-typescript-resolver-files@0.19.0
 pnpm add -D @types/node@catalog:
 cat > codegen.ts <<'EOF'
 import type { CodegenConfig } from "@graphql-codegen/cli";
@@ -303,7 +303,7 @@ export default config;
 EOF
 ```
 
-The preset is pinned to an **exact** `0.18.4` — `--save-exact`, not the caret range `pnpm add`
+The preset is pinned to an **exact** `0.19.0` — `--save-exact`, not the caret range `pnpm add`
 would otherwise write. The reason is the drift test further down, which recognises an
 unimplemented resolver by the literal stub comment the preset emits. A wording change in a
 patch release would make that scan find nothing and pass falsely, so the bump has to be a
@@ -315,7 +315,7 @@ of the published tarball before changing it: that
 `dist/generateResolverFiles/handleGraphQLRootObjectTypeField.js` still emits
 `/* Implement ${name} resolver logic here */`, and that
 `dist/validatePresetConfig/validatePresetConfig.d.ts` still accepts `resolverGeneration` and
-`typesPluginsConfig` in the shapes `codegen.ts` uses. Both survived 0.17 → 0.18. Skip the check
+`typesPluginsConfig` in the shapes `codegen.ts` uses. Both survived 0.17 → 0.18 and 0.18 → 0.19. Skip the check
 and the stub test becomes a green no-op, which is the one failure mode nothing else here would
 catch.
 
@@ -594,12 +594,23 @@ declared, `tsc` fails with `TS2307: Cannot find module`.
 `codegen` already means `wrangler types` here. Both are codegen, and turbo's `codegen` task
 already lists `src/generated/**` alongside `cloudflare-env.d.ts` in its `outputs`, so make the
 existing script the umbrella and give each generator its own name under it — `cf-typegen`
-keeps the name the OpenNext docs use:
+keeps the name the OpenNext docs use.
+
+**Read `apps/web`'s existing `codegen` script before running that line, and carry its
+contents into `cf-typegen`.** The web-shell slice folds `next typegen` into `codegen` so a
+fresh clone can generate the route types (`LayoutProps`, `PageProps`) Next writes into the
+gitignored `.next/types/` — without it a clone fails `pnpm typecheck` with `TS2304: Cannot
+find name 'LayoutProps'`. `pnpm pkg set` *replaces* a script rather than appending to it, so
+writing `cf-typegen` as `wrangler types …` alone deletes that step. The line above keeps it,
+but the general rule is the one to carry: this slice restructures two scripts an earlier
+slice owns, and neither may be written from this document without reading what is there. The
+loss is invisible on a developer machine, which already has the directory — only the
+fresh-clone row at the end of this slice catches it.
 
 ```bash
 pnpm pkg set \
   'scripts["codegen"]=pnpm run cf-typegen && pnpm run codegen:graphql' \
-  'scripts["cf-typegen"]=wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts' \
+  'scripts["cf-typegen"]=next typegen && wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts' \
   'scripts["codegen:graphql"]=graphql-codegen'
 ```
 
@@ -1692,6 +1703,28 @@ New binding in `wrangler.jsonc` → `pnpm cf-typegen` to retype `WorkerEnv`.
 
 EOF
 ````
+
+## The package map
+
+`CLAUDE.md` gains a line, because `apps/graphql` now exists and every session needs to know
+which of the two apps owns the schema. The pointer to the skill is the second half of the
+entry: the rule an agent is most likely to break here — hand-writing a file the codegen
+preset owns — is one file away rather than restated inline.
+
+```diff
+--- CLAUDE.md
+ - `apps/web` — Next.js on Cloudflare Workers via OpenNext.
++- `apps/graphql` — GraphQL Yoga Worker: the SDL modules and the resolvers implementing
++  them. `apps/web` reads its merged `schema.generated.graphqls` and reaches it over the
++  `API` service binding. See `.claude/skills/graphql/SKILL.md`.
+ - `packages/config` — shared tsconfig and ESLint base, extended by every package.
+```
+
+This slice had no such hunk until 2026-09-06, which was a real gap rather than a stylistic
+one: the slice creates an app and installs a skill, so a project that updates `CLAUDE.md` to
+say so drifts against its own plan and `pnpm docs:check` fails — while one that does not
+update it ships a package map missing half the workspace. Slice 0 owns the file's base
+heredoc, so the amendment has to be a `diff` hunk; `docs:check` composes them in slice order.
 
 ## Sources
 
