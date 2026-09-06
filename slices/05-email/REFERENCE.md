@@ -561,8 +561,13 @@ MAIL_TRANSPORT=log
 MAIL_FROM="__PROJECT__ <onboarding@resend.dev>"
 MAIL_TEST_RECIPIENTS=you@example.com
 # Only needed while you flip MAIL_TRANSPORT to resend for the real-send gate row.
-RESEND_API_KEY="re_..."
+# RESEND_API_KEY="re_..."
 ```
+
+**Commented, not live.** With `MAIL_TRANSPORT=log` nothing reads the key, so an uncommented
+`re_...` placeholder is a fake credential that answers `grep -l RESEND_API_KEY apps/graphql/.env*` —
+this slice's own preflight probe — and reports a key on a machine that has none. Commented, the
+line still says where the key goes without defeating the probe that looks for it.
 
 Slice 2 wrote that file whole; from here nobody can. A heredoc would either overwrite your
 real key or commit one, so this slice appends a fragment and hands the file back — which is
@@ -706,8 +711,16 @@ export const sendTestEmail: NonNullable<
 EOF
 ```
 
-`createMailer(ctx)` typechecks because `MailEnv` is declared structurally and `WorkerEnv`
-now carries all three keys.
+`createMailer(ctx)` typechecks because `MailEnv` is declared structurally — **not** because
+`WorkerEnv` carries all three keys. It carries two. `cf-typegen` generates `WorkerEnv` from
+`wrangler.jsonc` plus the env file, and `RESEND_API_KEY` is in neither: it is a secret, stored
+at Cloudflare by `wrangler secret put`, so nothing wrangler reads knows its name. The call
+compiles because `MailEnv` declares `RESEND_API_KEY?: string`, optional.
+
+That is the right shape rather than a gap to close: a secret cannot be statically proven
+present, so `createMailer`'s `if (!key) throw` is the only thing between a missing secret and a
+silent no-op. Adding the key to `WorkerEnv` by hand would buy a compile-time guarantee that is
+false at runtime.
 
 ## Local gate
 
@@ -727,12 +740,26 @@ what tells the person which rows are actually theirs.
 | -------------- | -------------------------------- | ------------------------------------------------- |
 | root           | `pnpm typecheck`                 | pass                                              |
 | root           | **`pnpm lint`**                  | **`6 successful`** — 4 lint + 2 `codegen` (was 5) |
-| root           | **`pnpm test:unit`**             | **`Tests 32 passed`** — 22 + email 7 + graphql 3  |
+| root           | **`pnpm test:unit`**             | **+7 email, +3 graphql** on the previous total    |
 | root           | **`pnpm test:integration`**      | **`Tests 2 passed`** — unchanged                  |
 | root           | `pnpm docs:check`                | no drift                                          |
 | `apps/graphql` | `pnpm wrangler deploy --dry-run` | bundles, and reports the upload size              |
 
-### Round 2 — manual, and every row is one click
+**The row asserts a delta, not a total.** An absolute count is a fact about one repo — whether
+its `packages/db` ever grew a unit test, whether an earlier slice's count was itself reconciled —
+and a reference that names one sends the next project hunting for two tests that were never
+supposed to exist. What this slice is accountable for is **+7 in `packages/email`** (3 render, 4
+mailer) and **+3 in `apps/graphql`** (the allowlist). Read the per-package lines and add them to
+whatever the previous slice actually left behind.
+
+### Round 2 — driven, not described
+
+**None of these three rows needs a person, and the first build to actually run them proved
+it.** They were written as "manual, every row is one click" before the loop had a Round 3, and
+the click was the wrong unit: the decisive evidence in two of them is a *count*, which a human
+eyeballing a terminal is worse at than `grep -c`. Drive all three — the two mutations with
+`curl` against the JSON endpoint, the template with the browser tool — and keep the pre-filled
+GraphiQL links below for the reader who wants to poke at it by hand.
 
 Start `pnpm dev` in `apps/graphql` first — it serves on `:8787`. Yoga ships GraphiQL on
 `GET /graphql`, and GraphiQL reads `?query=` straight into its editor, so a link can arrive
@@ -754,6 +781,20 @@ URL under `curl` returns `405` unless you pass `-H 'accept: text/html'`.
 The third row is the reason this round exists. An allowlist that logs the refusal _after_
 sending is the failure that looks fine in every test checking only the return value — and it
 looks fine in row two as well. Only the absence of a second log line disproves it.
+
+**So count the log lines; do not look at them.** "No new line appeared" is exactly the
+observation a person skims past, and the whole row turns on it. Capture the count before,
+after the allowed send, and after the refused one:
+
+```bash
+L=<the dev server's log>
+before=$(grep -c '\[mail:log\]' "$L")
+# ... allowed send ...   expect $before + 1
+# ... refused send ...   expect the same number again
+```
+
+Two sends and one log line is the pass. Two sends and two log lines is the bug this round
+exists to catch, and it is invisible in both mutation responses.
 
 **The real-send row lives in the production gate, not here.** Flipping
 `MAIL_TRANSPORT=resend` locally proves the same pipeline against the same API, so running it
@@ -801,7 +842,21 @@ cd apps/graphql
 pnpm wrangler secret put RESEND_API_KEY   # paste the key at the prompt
 ```
 
-Interactive because the key is never a file, a flag, or a `vars` entry. Cloudflare stores it
+Interactive because the key is never a file, a flag, or a `vars` entry.
+
+**The agent can drive this too, key included.** Resend shows a new key in an
+`<input type="password">` beside a **Copy to clipboard** button, so it can go from the dashboard
+to Cloudflare without ever being rendered — click Copy, never **Show value**, then pipe it:
+
+```bash
+V=$(xclip -selection clipboard -o)
+case "$V" in re_*) ;; *) echo "REFUSING: clipboard is not a Resend key"; exit 1;; esac
+printf '%s' "$V" | pnpm wrangler secret put RESEND_API_KEY --env-file .env.production
+```
+
+Same shape as slice 3's connection-string step: assert before piping, print only a verdict,
+clear the clipboard after. What still needs the user is *authorising* the key's creation — that
+makes a real credential in their name — not the typing. Cloudflare stores it
 against the Worker and **`wrangler deploy` does not clear it** — do not re-run this before
 each deploy. `pnpm wrangler secret list` confirms it without revealing it.
 
@@ -843,8 +898,29 @@ curl -s https://__PROJECT__-graphql.<account>.workers.dev/graphql \
 | "show original" in the client              | a `text/plain` part, not just `text/html` |
 
 `true` only proves Resend accepted it; arrival is what proves React Email rendered under
-workerd and a Worker's egress reached the API. The plain-text part is invisible in a rendered
-view, so read the raw source — that recipient is the reason the part exists.
+workerd and a Worker's egress reached the API.
+
+**Three of those four rows are not actually a person's job — Resend's dashboard has them.**
+That was not known until this gate was driven for real on 2026-09-06, and it changes who owns
+the round. Open the message at **resend.com/emails**:
+
+| Row                        | Where the evidence actually is                                                                                          |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| the message arrives        | the row's status, and `"last_event"` in the **Raw** tab. `Delivered` is the receiving MX accepting it, not just Resend queueing it. |
+| a `text/plain` part exists | the **Raw** tab's `"text"` field, populated alongside `"html"`. The **Insights** tab states it outright: *Include plain text version* ✓. |
+| the refusal sends nothing  | the absence of a second row. Same "count, don't look" rule as the local round.                                           |
+| it looks right in a client | **this one is still a person's.** A dashboard preview is not an inbox, and rendering is what inboxes disagree about.     |
+
+So hand the user the last row and keep the rest. `Sent` and `Delivered` carry separate
+timestamps in the events timeline, which is the distinction the old wording ("`true` only proves
+Resend accepted it") was reaching for and could not check.
+
+**Expect two Insights warnings, and do not chase them.** `Ensure link URLs match sending domain`
+and `Use a subdomain` both fire because the link is `https://<project>.example/...` and the
+sender is the shared `onboarding@resend.dev` — two placeholders this slice chooses deliberately.
+They are the same finding as the `MAIL_FROM` row in `Leaves behind`, surfaced by a third party,
+and they clear when a verified domain lands. Reading them as defects introduced here wastes the
+next build's time.
 
 ### 6. If it fails
 
@@ -949,11 +1025,17 @@ EOF
 
 ```diff
 --- CLAUDE.md
- Worker; SDL modules colocated with resolvers under src/schema), packages/db (Drizzle
--schema + client), packages/config (shared tsconfig).
-+schema + client), packages/email (React Email templates + Resend transport),
-+packages/config (shared tsconfig).
++- `packages/email` — React Email templates and the Resend transport. `apps/graphql` is its
++  only consumer. See `.claude/skills/project-email/SKILL.md`.
+ - `packages/config` — shared tsconfig and ESLint base, extended by every package.
 ```
+
+Until 2026-09-06 this hunk anchored on a **prose sentence** naming `packages/db` and
+`packages/config` together — a shape no slice in this chain ever writes. Slice 0's heredoc
+makes `CLAUDE.md` a bullet list, one entry per package, and Slices 2, 3 and 4 add bullets to
+it; the hunk could therefore never apply, and `pnpm docs:check` failed on `CLAUDE.md` at the
+end of every run of this slice. The `packages/config` line is the anchor every later slice
+shares, so a new bullet goes immediately above it.
 
 ## Sources
 

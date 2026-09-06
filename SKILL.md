@@ -435,6 +435,19 @@ skill from silently becoming a diary of the last project it built:
    bad reconcile cannot corrupt what is already recorded. Same day, second change: append to
    that day's file.
 
+   **Mechanically append — never `cat >` a changelog path.** `ls` the slice's `changelog/`
+   first, then write with `>>` or an editor. A truncating write on a path that already holds
+   today's entry succeeds silently, prints nothing, and looks exactly like creating one. This
+   happened on 2026-09-06 to slice 3's entry; the rule was already here as intent, and it is
+   restated as a command because intent is not what fails.
+
+   If it happens anyway, recover before reconstructing: this skill is **its own git repo**,
+   nested inside a parent directory that is not one, so `git show HEAD:<path>` restores the
+   file. Ask `git -C <the file's own directory> rev-parse --show-toplevel` rather than running
+   `git` wherever you happen to be standing — a "not a git repository" answer from one
+   directory too high reads exactly like no version control at all, and turns a recoverable
+   mistake into an invented one.
+
 **The test for 2 and 3 is the same: would this sentence still be true in a repo with a
 different name, owner and account?** If not, it belongs in 1. Concretely — `eslint 10.9.1 →
 10.10.0, nothing peers against it` is a changelog entry; `the gate went green first try` and
@@ -498,7 +511,12 @@ the record and the thing it records should never land apart.
     `__DOCS__`.
   - `USER-SETUP.md` — the accounts, browser logins and OS-level installs this slice needs from
     a person, each tagged with the round it unblocks. Written **for the user**, not the agent,
-    and handed over a section at a time when §2b's probes come back missing. Never rendered
+    and handed over a section at a time when §2b's probes come back missing.
+    **A step here has to be followable by someone who has never seen the vendor's UI**: name the
+    page by URL, the button by its label, and — above all — anything the vendor shows **once**,
+    because a value you cannot go back for turns a re-readable step into a destroyed one. "From
+    the dashboard, create a key" is not a step; it assumes the reader already knows the thing
+    the file exists to tell them. Never rendered
     into a project. **Only slices that need something from a person have one** — its absence is
     the statement that this slice needs nothing, which is why there are no placeholder files.
   - `changelog/<YYYY-MM-DD>.md` — why the REFERENCE now says what it says: pins that moved,

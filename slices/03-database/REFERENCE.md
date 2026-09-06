@@ -685,6 +685,30 @@ accident.
 EOF
 ````
 
+## The package map
+
+`CLAUDE.md` gains the package and a pointer to the skill this slice just wrote, the same shape
+Slices 2 and 4 use for the two apps. Without it the operating manual above is unreachable: a
+session that has not been told the database layer exists has no path from `CLAUDE.md` to
+`.claude/skills/project-db/SKILL.md`, and the rule most worth reaching — `apps/web` never
+imports this package — is stated only there.
+
+```diff
+--- CLAUDE.md
++- `packages/db` — Drizzle schema, migrations and the client factory. Postgres in Docker
++  locally, Neon through Hyperdrive in production. `apps/graphql` is its only consumer;
++  `apps/web` never imports it. See `.claude/skills/project-db/SKILL.md`.
+ - `packages/config` — shared tsconfig and ESLint base, extended by every package.
+```
+
+This slice had no such hunk until 2026-09-06, the same gap Slice 2 carried until the same day
+and for the same reason: a slice that creates a package and installs a skill has to say so in
+the package map, or a project updating `CLAUDE.md` by hand drifts against its own plan and
+`pnpm docs:check` fails — while one that leaves it alone ships a map missing a layer. Slice 0
+owns the file's base heredoc, so the amendment is a `diff` hunk; `docs:check` composes them in
+slice order, which is what lets this one anchor above the `packages/config` line that every
+later slice also anchors on.
+
 ## Sources
 
 The documentation this slice's §3 research rests on — kept here rather than in a shared

@@ -43,7 +43,7 @@ pnpm dlx shadcn@latest init --template next --base base --preset nova --no-monor
 ```
 
 `--preset <style>` is what makes the run non-interactive; without it the CLI prompts for the
-visual style and hangs. **Do not trust `init --help` for its value** — as of shadcn 4.19 the help
+visual style and hangs. **Do not trust `init --help` for its value** — as of shadcn 4.21 the help
 text advertises `--defaults` as `--preset=base-nova`, and the CLI rejects that string:
 `Invalid preset: base-nova. Available presets: nova, vega, maia, lyra, mira, luma, sera, rhea`.
 The preset is the style name alone; `base-nova` is what `components.json`'s `style` field ends up
@@ -54,13 +54,16 @@ default.
 
 The flags move between CLI releases, so re-check them; `components.json` below is the durable
 record of the answers either way. Record whatever the CLI writes there rather than composing it:
-4.19 adds `rtl`, `menuColor`, `menuAccent` and `registries`, and a shorter hand-written file
+4.21 writes `rtl`, `menuColor`, `menuAccent` and `registries`, and a shorter hand-written file
 silently drops them.
 
 What that leaves behind: `components.json`, a rewritten `src/app/globals.css` (the token block,
 the `@theme inline` mapping, and a `@layer base`), `src/lib/utils.ts` (the `cn` helper), and
-dependencies — `shadcn`, `class-variance-authority`, `clsx`, `tailwind-merge`, `lucide-react`,
-`tw-animate-css`, plus the primitives for the base you chose.
+dependencies. At 4.21: `shadcn`, `class-variance-authority`, `lucide-react`, `tw-animate-css`,
+the primitives for the base you chose (`@base-ui/react` for `--base base`), and **`cn`** — a
+package, where older releases wrote a local helper over `clsx` + `tailwind-merge`. That is why
+`src/lib/utils.ts` is now one line, `export { cn } from "cn"`, and why this doc still does not
+write it.
 
 None of those go in the `catalog:` block. The catalog exists for packages **more than one
 workspace member installs** — `typescript`, `eslint`, `@types/node` — where npm's `latest`
@@ -97,14 +100,18 @@ cat > components.json <<'EOF'
     "cssVariables": true,
     "prefix": ""
   },
+  "iconLibrary": "lucide",
+  "rtl": false,
   "aliases": {
     "components": "@/components",
+    "utils": "@/lib/utils",
     "ui": "@/components/ui",
     "lib": "@/lib",
-    "utils": "@/lib/utils",
     "hooks": "@/hooks"
   },
-  "iconLibrary": "lucide"
+  "menuColor": "default",
+  "menuAccent": "subtle",
+  "registries": {}
 }
 EOF
 ```
@@ -175,7 +182,6 @@ cat > src/styles/theme.css <<'EOF'
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
@@ -210,7 +216,6 @@ cat > src/styles/theme.css <<'EOF'
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
@@ -234,7 +239,7 @@ EOF
 Those are the CLI's `neutral` values, moved verbatim. **Add nothing.** Earlier revisions of this
 slice added `--destructive-foreground`, because shadcn used to map `--color-destructive-foreground`
 in `@theme inline` without declaring the token, leaving `text-destructive-foreground` resolving to
-nothing. As of shadcn 4.19 that mapping is gone, and `base-nova`'s destructive button variant is
+nothing. As of shadcn 4.21 that mapping is gone, and `base-nova`'s destructive button variant is
 `bg-destructive/10 text-destructive` rather than the literal `text-white` that was the visible
 symptom. Check before adding it back: if the `@theme inline` block the CLI writes has no
 `--color-destructive-foreground` line, the token has nothing to fix and is just an entry the next
@@ -254,6 +259,7 @@ cat > src/app/globals.css <<'EOF'
 @theme inline {
   --font-sans: var(--font-sans-src);
   --font-mono: var(--font-mono-src);
+  --font-heading: var(--font-sans-src);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -269,7 +275,6 @@ cat > src/app/globals.css <<'EOF'
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -290,27 +295,37 @@ cat > src/app/globals.css <<'EOF'
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-
   body {
     @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
   }
 }
 EOF
 ```
 
 Three things changed besides the extraction. The font mappings are **renamed**, and this is not
-cosmetic: `init` runs an "Updating fonts" pass over the scaffold's `globals.css` and, as of 4.19,
+cosmetic: `init` runs an "Updating fonts" pass over the scaffold's `globals.css` and, as of 4.21,
 emits `--font-sans: var(--font-sans)` — a token pointing at itself. Nothing errors; `font-sans`
-simply stops resolving and the page silently falls back to the UA font. The `-src` rename fixes
+simply stops resolving and the page silently falls back to the UA font. The same pass leaves
+`--font-mono: var(--font-geist-mono)` pointing at the scaffold's variable name, which breaks the
+moment `layout.tsx` renames it — both halves are why the `-src` rename is applied to both. The `-src` rename fixes
 that as a side effect of naming the seam properly, and is the reason to do it even in a project
-that never changes its font. `--font-heading` is new in `base-nova` (`CardTitle` uses it) and
-points at the same source.
+that never changes its font. `--font-heading` is new in `base-nova` and points at the same source. **It is not optional and
+it is easy to drop:** `card.tsx` puts `font-heading` on `CardTitle`, so a mapping block without
+that line leaves every card heading on the UA font while the rest of the page is correct — a
+failure that survives review because it reads as a design choice. Check the computed
+`fontFamily` of a rendered `CardTitle`, not the page as a whole.
 
 The `--font-sans` / `--font-mono` mappings are otherwise the scaffold's, kept — they resolve to
 the variables `next/font` declares in `layout.tsx`, and they are why `font-sans` means Geist —
@@ -418,7 +433,7 @@ machine and in CI. It needs no jsdom and no React plugin either, which is the no
 on `vitest.config.ts`: that wiring waits for a test that actually renders something.
 
 This used to fail on its first run against the CLI's untouched output, naming
-`destructive-foreground`. As of shadcn 4.19 it passes, because that mapping is gone. Expect
+`destructive-foreground`. As of shadcn 4.21 it passes, because that mapping is gone. Expect
 either outcome and read the failure rather than assuming it: a green first run means the
 invariant currently holds, which is all an invariant check can ever tell you.
 
@@ -434,10 +449,20 @@ genuinely app-specific — this is the only package with JSX:
 
 ```bash
 cat > eslint.config.mjs <<'EOF'
+import { createRequire } from "node:module";
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import base from "../../packages/config/eslint.base.mjs";
+
+// eslint-plugin-react (a transitive dep of eslint-config-next) defaults to
+// `version: "detect"`, and its detection path calls `context.getFilename()` --
+// removed in ESLint 10, so every rule it owns throws before linting a line.
+// Naming the version explicitly skips detection entirely. Slice 1 introduced
+// this; keep whatever form it left here.
+const reactVersion = createRequire(import.meta.url)(
+  "react/package.json",
+).version;
 
 // Tailwind's palette utilities, the ones a semantic token is supposed to replace:
 // `bg-zinc-50`, `text-red-600`, `border-white`. Matched inside className only, and
@@ -455,6 +480,7 @@ const eslintConfig = defineConfig([
   ...base,
   ...nextVitals,
   ...nextTs,
+  { settings: { react: { version: reactVersion } } },
   {
     // The theme contract, as a lint rule. Two selectors because a className is
     // written two ways: a plain string (or one inside a cn() call, which is still a
@@ -462,9 +488,8 @@ const eslintConfig = defineConfig([
     // TemplateElement rather than Literal.
     files: ["src/**/*.tsx"],
     // src/components/ui is a vendored checkout of the shadcn registry, not code we
-    // write. It does reach for a literal colour occasionally (`text-white` in the
-    // destructive button variant), and re-running `shadcn add` must not turn into a
-    // lint fight over the vendor's choices.
+    // write. It does reach for a literal colour occasionally, and re-running
+    // `shadcn add` must not turn into a lint fight over the vendor's choices.
     ignores: ["src/components/ui/**"],
     rules: {
       "no-restricted-syntax": [
@@ -493,6 +518,15 @@ const eslintConfig = defineConfig([
 export default eslintConfig;
 EOF
 ```
+
+**This block is a merge, and must be read as one.** It is the only whole-file heredoc in this
+slice that overwrites a file an earlier slice wrote, so it is the only one that can silently
+delete work. Slice 1 put the `reactVersion` block here to stop `eslint-plugin-react`'s
+`version: "detect"` path calling `context.getFilename()`, which ESLint 10 removed; a version of
+this block without it takes `lint` from green to every `eslint-config-next` rule throwing.
+**Read the existing file before writing this one** and carry across whatever Slice 1 actually
+left, rather than assuming it matches the comment above — the palette rule is the only thing
+this slice is adding.
 
 `no-restricted-syntax` takes an [esquery](https://github.com/estools/esquery) selector, and
 `[value=/regex/]` is how it matches a node's text — which is what lets one rule cover
@@ -750,14 +784,18 @@ right.
 | ---------------------- | ------------------------------ | --------------------------------------------------------------------- |
 | browser                | `localhost:3000`               | the card, in Geist, with the four values from Slice 2 still correct   |
 | browser                | the toggle                     | light ⇄ dark, no flash on reload, and the OS setting is the default   |
-| `src/styles/theme.css` | change `--primary` to anything | the whole app follows; **no other file edited** — this is the slice   |
+| `src/styles/theme.css` | change `--card` to anything    | the whole app follows; **no other file edited** — this is the slice   |
 | `apps/web`             | `pnpm preview`                 | same page under workerd, styles and font intact                       |
 | root                   | `pnpm typecheck`               | pass                                                                  |
 | root                   | **`pnpm lint`**                | **`5 successful`** — unchanged; the new rule is satisfied, not absent |
-| root                   | **`pnpm test:unit`**           | **`Tests 22 passed`** — 19 from Slice 2 + 3 (the theme contract)      |
+| root                   | **`pnpm test:unit`**           | **Slice 2's total + 3** (the theme contract) — read the number off Slice 2's gate |
 | root                   | `pnpm test:integration`        | `Tests 2 passed` — unchanged                                          |
 
 The third row is the only one that tests what this slice is _for_. Revert the token afterwards.
+
+**Change `--card`, not `--primary`.** Nothing on this page paints a primary surface — its one
+control is an `outline` button — so `--primary` can be changed to anything at all and the row
+passes having proved nothing. Pick a token the page actually renders.
 
 **Production gate** — nothing here touches the API, so web alone, from root:
 
@@ -777,8 +815,12 @@ Then, on the deployed URL, four things `next dev` could not have told you:
   flash is a few frames. `document.documentElement.style.colorScheme` is set by a line _after_
   the `__name(k2, "k2")` call, so a non-empty value proves the whole pre-hydration script ran;
   and `domInteractive` at or before `first-contentful-paint` is the class landing before paint.
-- A **hard reload with the cache disabled** still gets both. Otherwise you are reading your own
-  browser cache from the `pnpm preview` run.
+- The CSS and the font really came **over the network**. Re-fetch each with
+  `fetch(url, { cache: "no-store" })` from the console and check the status and byte count;
+  a hard reload with the cache disabled does the same job less precisely. Note that the
+  `pnpm preview` run is a *different origin* (`localhost:8788`), so it cannot be the source of a
+  stale hit — the cache actually worth defeating is this origin's own, from an earlier deploy of
+  the same URL, which is exactly what a redeploy of an unchanged asset name would serve.
 
 Commit.
 
@@ -881,6 +923,23 @@ const res = await graphqlFetch(HomeQuery);
 
 EOF
 ````
+
+## The package map
+
+`CLAUDE.md`'s `apps/web` line gains the theme rule and a pointer to the skill this slice just
+wrote, matching what Slice 2 did for `apps/graphql`. The pointer is the load-bearing half: the
+rule an agent is most likely to break here — spelling a palette colour where a token belongs —
+is one file away rather than restated inline, and restating it would give it a second source to
+drift from.
+
+```diff
+--- CLAUDE.md
+-- `apps/web` — Next.js on Cloudflare Workers via OpenNext.
++- `apps/web` — Next.js on Cloudflare Workers via OpenNext. Holds the theme: every token
++  value is in `src/styles/theme.css` and no component names a colour. See
++  `.claude/skills/project-web/SKILL.md`.
+ - `apps/graphql` — GraphQL Yoga Worker: the SDL modules and the resolvers implementing
+```
 
 ## Sources
 
