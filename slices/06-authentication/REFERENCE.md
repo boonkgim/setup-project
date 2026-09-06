@@ -331,9 +331,31 @@ literal pin, untouched.
    "@types/node": ^24.13.3
    react: 19.2.8
    react-dom: 19.2.8
-+  better-auth: ^1.7.2
-+  auth: ^1.7.2
++  better-auth: ^1.7.3
++  auth: ^1.7.3
++
++# Written by pnpm itself, not by hand. pnpm 11 holds a release-age cooldown on new
++# versions and records the ones an install accepted anyway; `pnpm add` appends here
++# and prints what it added. It is committed because it is real resolution state a
++# fresh clone must reproduce — and it belongs in the plan rather than baselined in
++# docs-check.ignore because, unlike wrangler.jsonc's account-specific ids, these
++# values are the same for anyone installing better-auth 1.7.3. Expect the next slice
++# that adds a dependency to extend it, and amend this hunk when it does.
++minimumReleaseAgeExclude:
++  - '@better-auth/core@1.7.3'
++  - '@better-auth/drizzle-adapter@1.7.3'
++  - '@better-auth/kysely-adapter@1.7.3'
++  - '@better-auth/memory-adapter@1.7.3'
++  - '@better-auth/mongo-adapter@1.7.3'
++  - '@better-auth/prisma-adapter@1.7.3'
++  - '@better-auth/telemetry@1.7.3'
++  - better-auth@1.7.3
++  - auth@1.7.3
 ```
+
+The `eslint:` line above is context, and it is whatever **your** catalog holds — re-anchor the
+hunk on your repo's value rather than the one written here, which is a snapshot of a pin that
+moves. `pnpm docs:check` reports the mismatch as `hunk does not apply` and names the line.
 
 The entries come first because `catalog:` is resolved at install time, not declared by it.
 (`@__PROJECT__/email` is already a dependency here, from Slice 5.)
@@ -500,6 +522,16 @@ EOF
 pnpm pkg set 'scripts["auth:generate"]=auth generate --config auth.config.ts --output ../../packages/db/src/auth-schema.ts --yes'
 pnpm auth:generate
 ```
+
+**It prints a red error and then succeeds.** On a first run the output is
+`ERROR [Better Auth]: Drizzle schema mismatch — Missing tables user, session, account,
+verification`, followed by `🚀 Schema was generated successfully!`. The adapter checks the
+live schema before the generator writes; the tables genuinely do not exist yet. Read the last
+line, not the loudest one.
+
+**What it writes is more than four tables.** Alongside them come three indexes
+(`account_userId_idx`, `session_userId_idx`, `verification_identifier_idx`) and three
+`relations()` blocks. Expect all of it in the SQL you read at the next step.
 
 Not a `codegen` step: it runs in `apps/graphql` and writes into `packages/db`, which
 `apps/graphql` depends on. As a turbo task that is a cycle and an output turbo cannot
@@ -1508,13 +1540,33 @@ Docker up, both dev servers running, `MAIL_TRANSPORT=log` in `apps/graphql/.env.
 Keep the `pnpm dev` terminal visible — with magic link the link is the credential, and that
 terminal is now your inbox.
 
-**Check which port the API actually bound**, before trusting anything below. A `wrangler dev`
-left running from an earlier session keeps 8787, and the new one takes 8788 without calling
-it a conflict — the startup line just says a different number. `apiOrigin()`'s dev branch
-hardcodes 8787, so the browser round then drives the _stale_ Worker, which predates the auth
-routes entirely: sign-in 404s and nothing explains why. Read the "Ready on" line, and if the
-port is wrong kill the supervising `wrangler dev` **node** process — killing `workerd` alone
-just makes its parent respawn it.
+**A stale `wrangler dev` breaks this round in two different ways, and only one is a port.**
+
+The first is the obvious one: a `wrangler dev` left from an earlier session keeps 8787 and the
+new one takes 8788 without calling it a conflict — the startup line just says a different
+number. `apiOrigin()`'s dev branch hardcodes 8787, so the browser round drives the stale
+Worker. Read the "Ready on" line.
+
+The second survives that check entirely, and cost a run on 2026-09-06. The new Worker took
+8787, `curl :8787/api/auth/get-session` answered `200`, and the browser still failed with
+`Cannot query field "viewer" on type "Query"`. `apps/web`'s `API` binding is a **service
+binding**: it resolves by service *name* through wrangler's dev registry, not by port, and the
+stale process still owned the registry entry. The preview log's
+`env.API (cc4-test-graphql) Worker local [connected]` is true and useless — it says a local
+worker answered, not which one.
+
+So probe the proxy, not the port. Both of these must answer `200`:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000/api/auth/get-session  # proxy
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8787/api/auth/get-session  # direct
+```
+
+`404` through the proxy against `200` direct is exactly this bug. Recovery is three steps and
+the order matters, because killing the stale process leaves the name unregistered
+(`503 Worker "cc4-test-graphql" not found`) rather than falling through to the live Worker:
+kill the stale supervising **node** process, restart `apps/graphql`'s `pnpm dev`, then restart
+the web preview. Killing `workerd` alone just makes its parent respawn it.
 
 ### Round 1 — automated, local
 
@@ -1544,6 +1596,10 @@ chain.
 
 The integration tests need `docker compose up -d`. They send nothing: `MAIL_TRANSPORT=log`
 is set inside the test's `env`, and the link they follow is read back off that log line.
+
+**Run this row through `pnpm preview`, not the bare binary.** `opennextjs-cloudflare preview`
+on its own skips the `NEXT_PUBLIC_APP_ENV=preview` the package script sets, and the page's
+`web env` row renders empty — which reads as a Slice 2 regression and is not one.
 
 ¹ **On port 3000, with `next dev` stopped.** `preview` defaults to 8788, and a sign-in from
 there is refused with `Invalid origin`: `BETTER_AUTH_URL` names `localhost:3000` and
@@ -1598,9 +1654,16 @@ database a migration runs against. That second one is the failure that does not 
 
 ```bash
 cd apps/graphql
+export CLOUDFLARE_ACCOUNT_ID=$(grep '^CLOUDFLARE_ACCOUNT_ID=' .env.production | cut -d= -f2- | tr -d '"')
 pnpm dlx auth@latest secret                   # prints a value; do not reuse .env.development's
 pnpm wrangler secret put BETTER_AUTH_SECRET   # paste it at the prompt
 ```
+
+**Export the account id when the login carries more than one account.** With several, both
+`secret list` and `secret put` stop and print the account table rather than guessing — the same
+condition Slice 1 documents for `deploy`. Use the env var and **not** `--env-file`: that flag
+only loads a dotenv file, the secret still comes from the prompt, and adding it makes a
+gitignored file mandatory for an operation that does not need one.
 
 A **different** value from the local one, or a session minted on your laptop is valid against
 production. Cloudflare stores it against the Worker and **`wrangler deploy` does not clear
@@ -1695,6 +1758,35 @@ Three lessons from trying anyway:
   and "wrong mailbox" look identical.
 - **Do not read the token out of `verification` to skip the inbox.** It is technically easy
   and it is the operator's credential. Ask first; expect to be told no.
+
+**Two production checks that need no credential of the operator's**, and between them they
+cover everything below the mailbox. Prefer both to asking for anything.
+
+First, **count rows rather than reading them.** Immediately after a link request, production
+should hold exactly one `verification` row and zero in `user`, `session` and `account`. That one
+query proves the secret, the migration, Hyperdrive and all four tables at once, and confirms the
+two properties the gate cares about: requesting a link issues no session, and it creates no
+account — the `user` row appears only when the link is followed. Counts are not credentials, so
+this stays on the right side of the "do not read the token" rule.
+
+Second, **drive the verify route with a deliberately invalid token:**
+
+```bash
+curl -s -i "https://<web origin>/api/auth/magic-link/verify?token=not-a-real-token&callbackURL=%2F" | grep -iE "^HTTP|^location"
+```
+
+Expect `302` with `location: https://<web origin>/?error=INVALID_TOKEN`. That single response
+proves the two failures most likely to be production-only and invisible locally: that
+`redirect: "manual"` survived to the deployed proxy — under the default `follow` the proxy
+resolves the redirect against the API Worker and hands back Yoga's landing page as a `200` —
+and that `BETTER_AUTH_URL` names the web origin rather than this Worker. A real token is not
+needed to learn either, which is what makes this the right check.
+
+**Resend's `last_event` may not be reachable at all.** It is suggested below as the
+authoritative machine-checkable delivery signal, and that assumes you hold the API key on this
+machine. You may not: a repo whose local `MAIL_TRANSPORT` is `log` has no reason to keep
+`RESEND_API_KEY` uncommented in `.env.development`, and production's copy is a Cloudflare secret
+that is correctly unreadable. When that is the case, mail arrival is simply a Round 3 row.
 
 ### 6. If it fails
 
@@ -1963,11 +2055,6 @@ and foreclose delegated access for good:
 +  and then reading unscoped stays correct only until someone refactors the filter. Fail
 +  identically for "no such account" and "no grant on it": two distinguishable errors are an
 +  enumeration oracle. The `auth` skill holds the check itself.
-+- **The local env file is `.env.development`, and `--env-file` on both `dev` and
-+  `cf-typegen` is what points wrangler at it.** Never drop the flag and never add a
-+  `.env.local` or `.dev.vars` here: without the flag wrangler merges `.env.local` and lets a
-+  single `.dev.vars` key short-circuit the whole `.env` layer, so local keys go missing with
-+  nothing naming the cause.
 @@
 -- Integration tests (`src/index.int.test.ts`) run the real Worker; they need
 -  `docker compose up -d`.
@@ -2016,6 +2103,15 @@ follow from that are not obvious from reading the component:
 +  adds `url=` to its line because locally that is the only way to sign in. Adding the same
 +  to the Resend branch would write live credentials into a production log.
 ```
+
+**Every hunk in this section is anchored on prose an earlier slice wrote, and that prose
+drifts between projects.** Read the target skill file first and re-anchor each hunk on what is
+actually there; on 2026-09-06 four of them needed it, because this repo's `project-db` says
+"only the API Worker does" where the hunk expected "only `apps/graphql` does", and its
+`project-graphql` had reworded both the `ctx` and the `wrangler.jsonc` bullets. One anchor was
+not stale but *wrong*: `project-graphql` still claimed its integration vitest project was
+"wired and empty", which Slice 3 had made false without correcting it — re-anchoring is the
+moment to fix that rather than preserve it.
 
 The anchor is the two-line `Owns` bullet Slice 5 wrote, used as context rather than
 rewritten. If it reads differently in your repo, re-anchor rather than forcing it —

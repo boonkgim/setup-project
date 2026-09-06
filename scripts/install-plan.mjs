@@ -7,7 +7,7 @@
 //   node scripts/install-plan.mjs --repo <dir> --name <project> --through 05 --date 2026-08-30
 //
 // It writes <repo>/docs/setup/: the selected slice files, and nothing else, with __PROJECT__
-// and __DOCS__ resolved. Slice 6 also gets assets/code-ui-SKILL.md, which it copies into
+// and __DOCS__ resolved. Slice 6 also gets assets/project-ui-SKILL.md, which it copies into
 // .claude/skills/.
 //
 // Each slice is a directory — slices/<stem>/REFERENCE.md is the clean procedure,
@@ -278,13 +278,28 @@ mkdirSync(outDir, { recursive: true });
 const resolve = (text) =>
   text.replaceAll("__PROJECT__", name).replaceAll("__DOCS__", DOC_REL);
 
+// --force overwrites only what was named on --slices/--through, never a slice the
+// prerequisite closure added. A slice file present in the repo is that project's
+// execution record; regenerating a *prerequisite* from the reference to reinstall the
+// slice above it destroys the record of a build that already happened, and the loss is
+// silent — the file still exists and still looks like a plan. Asking for 06 --force
+// once clobbered 00-05 on a real repo (2026-09-06), which is why the flag is scoped
+// here rather than in the caller.
 const force = has("force");
+const forced = new Set(force ? selected : []);
+const forcedPaths = new Set(
+  [...forced].map((id) => `${CATALOG[id][0]}.md`),
+);
 const written = [];
 const kept = [];
 
 const put = (rel, text) => {
   const path = join(outDir, rel);
-  if (existsSync(path) && !force) {
+  // Assets carry no execution record — they are shipped files, not a build log — so
+  // --force applies to them unscoped. Only slice files are scoped.
+  const mayOverwrite =
+    force && (rel.startsWith("assets/") || forcedPaths.has(rel));
+  if (existsSync(path) && !mayOverwrite) {
     kept.push(rel);
     return;
   }
@@ -300,8 +315,8 @@ for (const id of install) {
 
 if (wanted.has("06"))
   put(
-    "assets/code-ui-SKILL.md",
-    readFileSync(join(SKILL, "assets/code-ui-SKILL.md"), "utf8"),
+    "assets/project-ui-SKILL.md",
+    readFileSync(join(SKILL, "assets/project-ui-SKILL.md"), "utf8"),
   );
 
 // ---------------------------------------------------------------- report
@@ -319,7 +334,7 @@ if (added.size)
 
 if (written.length) console.log(`\nWrote ${written.length} files.`);
 if (kept.length) {
-  console.log(`\nLeft alone (already present — pass --force to overwrite):`);
+  console.log(`\nLeft alone (already present — name it on --slices with --force to overwrite):`);
   for (const k of kept) console.log(`  · ${k}`);
 }
 // Any .md here that is not a slice in this selection — the filter is deliberately every
