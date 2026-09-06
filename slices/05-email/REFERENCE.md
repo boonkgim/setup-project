@@ -6,6 +6,16 @@ third-party API call from a Worker, and the first secret delivered by `wrangler 
 A verification mail you cannot send is not a gate, so this groundwork comes before a layer
 that would need to send one.
 
+## Preflight
+
+```bash
+grep -l RESEND_API_KEY apps/graphql/.env* 2>/dev/null    # key already on this machine?
+```
+
+The account and key block **Round 2 only** — local rendering sends nothing and needs neither.
+`USER-SETUP.md` has the signup, the scope the key needs, and the shared-sender limit that
+decides who can receive.
+
 ## Decisions
 
 | Decision                                                                       | Why                                                                                                                                                                               |
@@ -769,11 +779,8 @@ to. A `cd` a reader can scroll past is a wrong-Worker secret waiting to happen.
 
 ### 1. Resend account and API key — one time
 
-Sign up at [resend.com](https://resend.com), create a key with **Sending access** only.
-
-`onboarding@resend.dev` is Resend's shared sender and delivers **only to the address you
-signed up with**. Any other recipient is rejected at Resend, not by this code. Sending
-elsewhere needs a verified domain and a new `MAIL_FROM`; the pipeline is proven either way.
+`USER-SETUP.md` §1–3: the signup, the sending-access scope, and the shared-sender limit that
+decides who can actually receive. Nothing here is the agent's to do.
 
 ### 2. `MAIL_TEST_RECIPIENTS` — one time
 

@@ -2,6 +2,17 @@
 
 No deploy in this slice; the gate is that the workspace installs and tooling runs.
 
+## Preflight
+
+Two runtimes, no accounts. Both are one command to fix — `USER-SETUP.md` has them.
+
+```bash
+node -v     # want v24 or newer
+pnpm -v     # want 11.x
+```
+
+Either one missing blocks the whole slice, so settle it before the first block below.
+
 **First file in the repo: lock the Node version.** Everything that follows — corepack, pnpm,
 every install and build — runs on whatever Node is active, so pin it before anything else:
 

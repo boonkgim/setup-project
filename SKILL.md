@@ -8,8 +8,8 @@ license: MIT
 
 One slice per invocation, through a fixed loop:
 
-**reference → research → wire → plan → execute → local gate → reconcile → production gate
-→ reconcile → hand the user the manual steps → commit**
+**reference → preflight → research → wire → plan → execute → local gate → reconcile →
+production gate → reconcile → hand the user the manual steps → commit**
 
 The `slices/` directories are a **reference, not a script.** They encode a stack that was verified
 as a set, and — more valuably — the traps that cost real time: the `devEngines` block
@@ -88,9 +88,9 @@ want to know whether a trap you just met has been seen before. The prose between
 part that keeps its value — read it for the reasoning, and treat every version number, flag
 and file path in it as a claim to check rather than a fact.
 
-If the slice needs an account the user does not have (Cloudflare, Neon, Resend, Stripe), say
-so **now**. A missing account does not block writing the plan, but it strands the slice
-halfway through its production gate with the local half already committed.
+A slice whose account or tooling is missing strands halfway through its production gate with
+the local half already committed, so establish that **now** — by running §2b's probes, not by
+asking. Report what you found; raise only what the probes could not settle.
 
 **Look backward, not forward.** Read what the project already has — `docs/setup/`,
 `CLAUDE.md`, the skill files earlier slices wrote — and follow the conventions they set so
@@ -131,6 +131,48 @@ artifact is created rather than when someone spots it:
 
 Slice 99 reads these as a cross-check — never as its input, because a ledger can only contain
 what someone already thought to write down. It reads the code first.
+
+## 2b. Preflight: settle what you can settle
+
+**A fact a command on this machine can obtain is never a question.** §3 checks what is true in
+the world — pins, flags, vendor docs. This step checks what is true *here*, and it exists
+because the two failures look nothing alike: an unverified pin fails loudly at install, while
+an unasked-for question just wastes the user's attention on something the terminal already
+knew.
+
+**The probes themselves live in the slice, not in this file.** Each slice's `REFERENCE.md`
+opens with a `## Preflight` block naming the few it needs, and its `USER-SETUP.md` carries the
+fix for each. A master table of every tool the stack has ever wanted would be the shared
+bibliography §7 already threw out — mostly duplicated into the slice that needed it, the rest
+stranded in a file no step tells you to open. Run **this slice's** probes; a project stopping
+at 02 should never be told how to install the Stripe CLI.
+
+Two rules govern the probes wherever they are written:
+
+- **Probe for presence, never print content.** `stripe config --list` writes `pk_live_…` and
+  account ids straight to the terminal, and a probe is not exempt from §6's "never echo a
+  secret" just because it runs earlier. Pipe it to `grep -q` and read the exit code.
+- **A probe that fails is information, not a blocker.** `wrangler whoami` exits non-zero when
+  logged out; that is the answer, not an error to retry.
+
+**What survives the probes is the question — and there is at most one, bundling the residue.**
+Probes settle facts; they cannot settle decisions. *Which* of several Cloudflare accounts the
+Worker belongs in is the operator's call. So is spending money, sending real mail, and creating
+an account that does not exist. Ask about those, once, and never about anything a probe
+answered.
+
+### When a probe comes back missing
+
+Do not report the gap and stop — a missing tool has a known fix, so give it. Hand the user the
+steps from **this slice's `USER-SETUP.md`**, for the probes that actually failed and nothing
+else: one line per step, the exact command, no rationale. Interactive steps — a browser login,
+a `sudo` — are the user's to run, so tell them to prefix the command with `!` and the output
+lands in this conversation.
+
+Say **which round each one unblocks**, because that decides whether the slice waits. A missing
+runtime blocks everything; Docker blocks Round 1 for the slice that needs it; an account that
+does not exist usually blocks only Round 2, and the local half can still be built, gated and
+committed with Round 2 reported as deferred.
 
 ## 3. Research what is currently true
 
@@ -376,6 +418,11 @@ explains it wrongly is worse than one that fails, because it will be trusted. If
 something the round then disproved — a directory that gets created, a package that is
 current — rewrite the claim to what you actually observed, and say how you observed it.
 
+A fourth record exists for the rarer case: a change to the **method** rather than to a slice —
+the loop, the rules, what a slice directory holds — goes in the top-level `changelog/<today>.md`,
+because no single slice owns it and copying it into eight would rot in eight places. The test for
+reaching for it is whether the sentence would still be true of a slice that does not exist yet.
+
 **Never sync a doc from disk automatically.** `docs:check` compares the plan against the repo
 to catch them disagreeing; a plan regenerated from the repo agrees by definition and detects
 nothing. Amend by judgement, block by block, because the repo is right about _this_ — not by
@@ -389,8 +436,12 @@ the record and the thing it records should never land apart.
 
 ## Files
 
-- `reference/slices.md` — the catalog: per-slice detail, dependency reasoning, the accounts
-  table. Read it before building any slice.
+- `reference/slices.md` — the catalog: per-slice detail, dependency reasoning, and the accounts
+  table with the probe for each need. Read it before building any slice.
+- `changelog/<YYYY-MM-DD>.md` — why the **skill's method** now says what it says: changes to the
+  loop, to what a slice directory holds, to the rules every slice obeys. Append-only, same shape
+  as a slice's changelog and same project-agnostic test. A change to one slice's procedure goes
+  in that slice's changelog instead; this is only for what applies to all of them.
 - `reference/adapting.md` — how these files were made project-agnostic, and what to change
   when a pin goes stale or a slice needs a variant.
 - `scripts/install-plan.mjs` — renders each slice's `REFERENCE.md` into
@@ -398,9 +449,16 @@ the record and the thing it records should never land apart.
   there.
 - `slices/` — one **directory per slice**: the eight build slices `00`–`07`, plus the `99`
   audit. Each holds:
-  - `REFERENCE.md` — the clean procedure, plus its `## Sources` and `## Leaves behind`. This
-    is what gets rendered into a project. The project name is the literal token `__PROJECT__`,
-    and the plan's own directory is `__DOCS__`.
+  - `REFERENCE.md` — the clean procedure, plus its `## Preflight`, `## Sources` and
+    `## Leaves behind`. **Only what an agent can execute**: the moment a step needs a human, it
+    becomes a one-line pointer into `USER-SETUP.md`. This is what gets rendered into a project.
+    The project name is the literal token `__PROJECT__`, and the plan's own directory is
+    `__DOCS__`.
+  - `USER-SETUP.md` — the accounts, browser logins and OS-level installs this slice needs from
+    a person, each tagged with the round it unblocks. Written **for the user**, not the agent,
+    and handed over a section at a time when §2b's probes come back missing. Never rendered
+    into a project. **Only slices that need something from a person have one** — its absence is
+    the statement that this slice needs nothing, which is why there are no placeholder files.
   - `changelog/<YYYY-MM-DD>.md` — why the REFERENCE now says what it says: pins that moved,
     claims corrected, traps found. Append-only, never rendered into a project, and
     **project-agnostic** — see §7 for the test an entry has to pass.

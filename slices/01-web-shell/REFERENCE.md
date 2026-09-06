@@ -2,6 +2,19 @@
 
 Prove the Next.js → OpenNext → Workers pipeline with a bare app before any backend exists.
 
+## Preflight
+
+```bash
+npx wrangler whoami    # login state — and every account the login carries, with its id
+```
+
+A non-zero exit means logged out; that is the answer, not an error to retry. **More than one
+row in the account table is the single question this slice has to ask** — which account the
+Worker belongs in is the operator's call, and wrangler refuses to guess in non-interactive
+mode. `USER-SETUP.md` covers both cases.
+
+Neither blocks the local half: it builds, gates and commits with Round 2 deferred.
+
 ```bash
 mkdir -p apps && cd apps
 # Every prompt answered as a flag, so nothing blocks on stdin. Check `--help` first: this

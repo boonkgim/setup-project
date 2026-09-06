@@ -9,6 +9,19 @@ signature verified over a raw body under workerd's WebCrypto; and a payment form
 Slice 5 proved a Worker can call out to an API. This is the other direction, and the
 direction where being wrong costs money.
 
+## Preflight
+
+```bash
+stripe --version                             # CLI installed?
+stripe config --list | grep -q account_id    # an account linked? exit code only
+```
+
+**Never let `stripe config --list` print** — it writes `pk_live_…` and account ids straight to
+the terminal. Read the exit code.
+
+The CLI blocks **Round 1**, which forwards webhooks through `stripe listen`. The account blocks
+both rounds. `USER-SETUP.md` has each, and stays in test mode throughout.
+
 ## Shape
 
 ```
@@ -1563,8 +1576,8 @@ pnpm turbo codegen --filter @__PROJECT__/web
 
 ## Local gate
 
-Docker up, both dev servers running, and the Stripe CLI forwarding. Install it once with
-`npm install -g @stripe/cli`, then `stripe login`.
+Docker up, both dev servers running, and the Stripe CLI forwarding — `USER-SETUP.md` §3
+installs it and links it to the right sandbox.
 
 ```bash
 cd ../..
@@ -1680,11 +1693,8 @@ charges a real card at step 7, which is not what a pipeline proof is for.
 
 ### 1. Stripe account and API keys — one time
 
-Sign up at [stripe.com](https://stripe.com). No business details or bank account are needed
-for test mode. From the dashboard's API keys page, in a sandbox, copy **both** keys this time:
-the secret one, beginning `sk_test_`, and the publishable one, beginning `pk_test_`. Embedded
-Checkout runs in the browser, so unlike a hosted integration the publishable key is load-
-bearing here.
+`USER-SETUP.md` §1–2: the signup, and why this slice needs **both** the `sk_test_` and the
+`pk_test_` key where a hosted integration needs only one.
 
 ### 2. `WEB_ORIGIN`, `STRIPE_MODE`, and the publishable key — one time
 

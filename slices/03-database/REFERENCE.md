@@ -10,6 +10,17 @@ answering out of thin air and starts answering out of a table, reached through a
 binding. The observable never changes — the page said `health` before and says `health` after
 — which is precisely what makes the second half a proof about a seam rather than a feature.
 
+## Preflight
+
+```bash
+docker info --format '{{.ServerVersion}}'              # the daemon running, not just installed
+grep -l DATABASE_URL packages/db/.env* 2>/dev/null    # is a connection string already here?
+```
+
+Docker blocks **Round 1** — the local gate cannot run without it. The Neon project blocks
+**Round 2 only**, so the infrastructure half can be built, gated and committed first.
+`USER-SETUP.md` has both, including the create-form toggle that must stay off.
+
 ## Local half
 
 Root `docker-compose.yml`. Check where the previous slice left you before copying the `cd`
@@ -501,12 +512,9 @@ as success.
 
 ## Production half
 
-Create the Neon project (if not yet) and copy the **direct/unpooled** connection string.
-
-**Leave the create form's "Enable Neon Auth" toggle off.** It provisions Neon's own auth tables
-into this database. The authentication slice uses Better Auth and generates its own, so turning
-this on lands a second, competing auth system in the same database — and it defaults to off, so
-this costs nothing but noticing.
+Create the Neon project (if not yet) and copy the **direct/unpooled** connection string —
+`USER-SETUP.md` §2–3, including the "Enable Neon Auth" toggle that must stay off and how to
+tell the pooled host from the direct one.
 
 Write it to `packages/db/.env.production` — gitignored, same `DATABASE_URL` key as
 `.env.development`, and the only copy you keep. This is the one string in the whole repo you would

@@ -10,10 +10,12 @@
 // and __DOCS__ resolved. Slice 6 also gets assets/code-ui-SKILL.md, which it copies into
 // .claude/skills/.
 //
-// Each slice is a directory — slices/<stem>/REFERENCE.md is the clean procedure, and
-// slices/<stem>/changelog/<date>.md is why that procedure now says what it says. Only the
-// REFERENCE is rendered: a project needs the plan it is about to execute, not the history of
-// how the reference reached it. The changelog is the skill's own record and stays here, which
+// Each slice is a directory — slices/<stem>/REFERENCE.md is the clean procedure,
+// slices/<stem>/USER-SETUP.md is what that slice needs from a person (only the slices that
+// need something have one), and slices/<stem>/changelog/<date>.md is why the procedure now
+// says what it says. Only the REFERENCE is rendered: a project needs the plan it is about to
+// execute, not the history of how the reference reached it, and not setup steps that were
+// handed over in conversation once and are done. The changelog is the skill's own record and stays here, which
 // is also what keeps it project-agnostic — nothing in it is allowed to describe one repo's run.
 // The project's counterpart is docs/setup/<stem>.md itself, which is that repo's execution
 // record and is amended in place as it is built.

@@ -98,7 +98,9 @@ the standard package contract, and the repo's first real unit test. Also retires
 
 - **Needs:** a Cloudflare account; `wrangler login` done. **If that login carries more than
   one account, the account id too** — wrangler refuses to guess in non-interactive mode, and
-  which account the Worker lives in is the operator's call, not the plan's. It goes in a
+  which account the Worker lives in is the operator's call, not the plan's. Do not ask whether
+  either is true: `wrangler whoami` reports the login state and prints every account with its
+  id, so only the *choice* between rows is ever a question. It goes in a
   gitignored `.env.production`, per Slice 0's environment convention, read only by
   `deploy:production` via `--env-file`. Deliberately not `.env.development`: dev and
   production may be different accounts, and wrangler does not read that filename anyway.
@@ -253,16 +255,28 @@ public because it was never asked whether it should be. Reports; changes nothing
 
 ## Accounts and tooling, by slice
 
-| Need                                 | First required at |
-| ------------------------------------ | ----------------- |
-| Node 24+, pnpm, corepack             | 00                |
-| Cloudflare account, `wrangler login` | 01                |
-| Docker                               | 03                |
-| Neon project (direct/unpooled URL)   | 03 (production)   |
-| Hyperdrive config (same account)     | 03 (production)   |
-| Resend account + API key             | 05 (production)   |
-| Stripe test account + Stripe CLI     | 07                |
+| Need                                 | First required at | Probe                                       |
+| ------------------------------------ | ----------------- | ------------------------------------------- |
+| Node 24+, pnpm, corepack             | 00                | `node -v; pnpm -v`                          |
+| Cloudflare account, `wrangler login` | 01                | `npx wrangler whoami`                       |
+| Docker                               | 03                | `docker info --format '{{.ServerVersion}}'` |
+| Neon project (direct/unpooled URL)   | 03 (production)   | `grep -l DATABASE_URL packages/db/.env*`    |
+| Hyperdrive config (same account)     | 03 (production)   | `pnpm wrangler hyperdrive list`             |
+| Resend account + API key             | 05 (production)   | `grep -l RESEND_API_KEY apps/graphql/.env*` |
+| Stripe test account + Stripe CLI     | 07                | `stripe --version`                          |
 
-Ask about these **before** installing the plan. A slice whose account does not exist yet is
-a slice that stalls halfway through its production gate, with the local half already
-committed.
+**Probe for these before installing the plan; do not ask.** Every row is a fact the terminal
+already knows, and SKILL.md §2b is the rule that governs reading them. Each slice repeats its
+own probes in its `REFERENCE.md` `## Preflight` block, and the remedy for a failing one is in
+that slice's `USER-SETUP.md` — this table is a map of where the needs fall, not a place to
+read setup steps out of.
+
+Note the column heading: **first** required at. Every need lands at exactly one slice, so a
+later slice never re-runs a setup step — it re-probes, which is the agent's job rather than
+the user's.
+
+What a probe cannot settle is which of several Cloudflare accounts to use, whether to spend
+money, and whether to create an account that does not exist. Those are the only questions
+worth putting to the user, and a slice whose account does not exist stalls halfway through
+its production gate with the local half already committed — so raise them before installing
+the plan, not at the gate.
