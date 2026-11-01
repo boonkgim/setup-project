@@ -2,10 +2,589 @@
   "backup_project": {
     "version": 1,
     "project": "setup-project",
-    "entries": [],
-    "gaps": [
-      "Initial audit and storage approvals pending"
+    "entries": [
+      {
+        "kind": "github",
+        "path": ".gitignore",
+        "sha256": "47f0fec9241ec1d37bccb26c077e98c30bc41ef631359ab32bfa382b272f1bab",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.229523+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "LICENSE",
+        "sha256": "298c4c92a32d5cb8188f29c3af2f35634746a1847d3072e3c035d34d5662aa7e",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.230882+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "README.md",
+        "sha256": "5ef1a83062669857a621214213632abde3ccc2ae38b6c7471cbd5c4ca87b270a",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.232327+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "SKILL.md",
+        "sha256": "5cf9eb43897b653ffea3808d86f1c331f4488e58d7f055652bb095d4bd4c89bc",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.233693+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "assets/project-ui-SKILL.md",
+        "sha256": "fb2c72edce5299f2cec9a2d1b79c96d50402b4f9afe90899e101eadce7516b96",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.235265+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "changelog/2026-09-06.md",
+        "sha256": "945f63f9c0343158fc3183006b67aec9774f44c5f40406b143667ef40aba6259",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.236896+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "docs/prompt-history.md",
+        "sha256": "4cf74f48086df8f484a162ca54edfc98b119f7ed3922de44589ac0aa4afb178c",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.238471+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "reference/adapting.md",
+        "sha256": "274320985a0f5fc6c4a65440e66e45983f91a744e8a3b3fe9f9eccf8bbe3fd81",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.239965+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "reference/slices.md",
+        "sha256": "943460fab8f512881b3dd8168b24c9bb03dd8ec03c781a90463d0f17075cc4d4",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.241224+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "scripts/install-plan.mjs",
+        "sha256": "2655f412cd8b84422ab289b2e39d199f798fa8d919ec9f2db67dbf252d8c710d",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.242775+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/00-workspace-foundation/REFERENCE.md",
+        "sha256": "516496a5a04461e2b714d3e7488e6e0bf1899df7d6b7f6b01a6e9957e091a223",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.244602+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/00-workspace-foundation/USER-SETUP.md",
+        "sha256": "f69914ba7aad653ef8db8be645575962307428bbdc141a1867e9c1fcb8b94854",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.245955+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/00-workspace-foundation/changelog/2026-08-30.md",
+        "sha256": "0a659aa0fd936495ce1a471639a189a3369e24ba6f9a006e44f98fa3028a7579",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.247946+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/00-workspace-foundation/changelog/2026-08-31.md",
+        "sha256": "0174eba2fc8e2abd56a20d7583544943e94e082496d978143aa5f349da297702",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.249910+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/00-workspace-foundation/changelog/2026-09-06.md",
+        "sha256": "c0359b2d0506d8f2895f15232929724e69cd394799c2d1f39d869cc5eb5cfb26",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.251849+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/01-web-shell/REFERENCE.md",
+        "sha256": "c834f440cb0f288cf7728f3aed55c9d28b01791fc8395e87e769d8fdfa4e511a",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.253651+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/01-web-shell/USER-SETUP.md",
+        "sha256": "3e9a3dd0fd8dd5869e6bcecbba99036ca4d50839a6ef47f39e7762844b06c3e7",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.255020+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/01-web-shell/changelog/2026-08-31.md",
+        "sha256": "747ea050f601faa6b6bffae9b58d0d2e0ab46b66165da8ff793028570eb16970",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.256812+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/01-web-shell/changelog/2026-09-06.md",
+        "sha256": "ac8154dc929935e8d43d5c6436253e25ac463b09ead7803ab49cf7555ddd91c4",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.258129+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/02-graphql/REFERENCE.md",
+        "sha256": "210aa91e6c87bc2b6eda9d6660cafdf739b945debabdfcc9f1eb45fc877f32a3",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.259849+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/02-graphql/changelog/2026-08-31.md",
+        "sha256": "572d686730eb5aa4b3a98859b7068edff37ff81c05cb61a534761ced67f1b82b",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.261438+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/02-graphql/changelog/2026-09-06.md",
+        "sha256": "82c1c4bdc324d21ba5daea18774c7970b709fa299cba9f48b22101783fd9ae88",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.262866+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/03-database/REFERENCE.md",
+        "sha256": "24353c655bad73ae71ef4121b2788075984f4ef1f5271e000b5b57fa5f319488",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.264592+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/03-database/USER-SETUP.md",
+        "sha256": "7eb7580ef15f84ac95b4268e8270b37fbea7a7913f346707292e23e217bd93ea",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.266009+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/03-database/changelog/2026-08-31.md",
+        "sha256": "b802206b9021f2775d30b599d4e1c201549fff2ad334faecd20ebdbf3ce248ff",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.267721+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/03-database/changelog/2026-09-06.md",
+        "sha256": "8b222d8858675d31662c213db39f6b1c20332d608b0768563296c314a3a9b1b4",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.269201+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/04-theming-system/REFERENCE.md",
+        "sha256": "9865acf155b88ad1edb67c2e9bbf2e811db00f77b3660dc801b83194caf79217",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.270953+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/04-theming-system/changelog/2026-08-31.md",
+        "sha256": "a1dcc126bb613a8e3dae02bb259a5733b1737834f3d65f713e3fbd67062f756a",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.272502+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/04-theming-system/changelog/2026-09-06.md",
+        "sha256": "bfa3b66032e38b4b7d915be53adfeb2afa715e4d0719580b17a5cf2fd4c379ce",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.273937+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/05-email/REFERENCE.md",
+        "sha256": "88bcbfa002bdffa7a1884c066bce233357ad4bf65e40590fe435a2ceaf523ab1",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.275616+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/05-email/USER-SETUP.md",
+        "sha256": "b149b2461b85bc6da3f274151f62f1392b550c30f1008819fcb5cf10b6babbe1",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.276969+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/05-email/changelog/2026-09-01.md",
+        "sha256": "23381246d4b742716eb87f8be626f47a03d40f6e6d61e9d52f590542e57e5a4e",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.278728+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/05-email/changelog/2026-09-06.md",
+        "sha256": "4fc9aa8f321aa47d796cb37516086bd7fe9bf77f4591a8ffb279fe4c8ecd2aae",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.280091+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/06-authentication/REFERENCE.md",
+        "sha256": "9eea86935f0665b5839da105d2b510a71350aa88c84fb396900f212ae43ad669",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.281934+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/06-authentication/changelog/2026-09-01.md",
+        "sha256": "2df66e9e4b4152611b90ee9f1cb44da8dfbb4f73bf74f0fd42ef2dcb94232248",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.283638+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/06-authentication/changelog/2026-09-06.md",
+        "sha256": "386bfb30b22aadab46dc5be2f1d23b6d54bd3f830157f1714431cbd7940e19c2",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.285013+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/07-payments/REFERENCE.md",
+        "sha256": "dcc11a93afc3f0785da596ac39883d3cc987993c5f8d83f3a697a648d049860e",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.286921+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/07-payments/USER-SETUP.md",
+        "sha256": "974d17da7b0b8e26a637e94982cf6504ef5e0549725f888e7dc564abf4eb5ffa",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.288227+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/07-payments/changelog/2026-09-01.md",
+        "sha256": "4815d22cb8b6707bdc2b91001f492f6fea0f2e94277e32e9d58d97752b58e8f6",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.289865+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/07-payments/changelog/2026-09-06.md",
+        "sha256": "15a41b925284b2ea74844bd23655f904210c0762c11aa43fe3f325439374ed78",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.291221+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/99-security-audit/REFERENCE.md",
+        "sha256": "9ef0249f13ef3d206f74481010569da9649c6dcaa0c46f95431f05579ffae2a4",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.293011+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "slices/99-security-audit/changelog/2026-09-01.md",
+        "sha256": "867fdff28871eaf4beb2353384c526bb1fdec6a4aa0fcc727849d6b98e48583e",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.294695+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "AGENTS.md",
+        "sha256": "6a2d4f07bbad3caa7f27b238fa0ac7a0ca7c10eb6aeee8d2082d74021a59ceef",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.296184+00:00"
+      },
+      {
+        "kind": "github",
+        "path": "backup.config.json",
+        "sha256": "4d0d9aab627c01af45627ff712f58a2f260283425272267103cec555090d2ac1",
+        "commit": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "published_branch_head": "bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+        "remote": "origin",
+        "branch": "main",
+        "verified_at": "2026-11-01T22:23:16.297515+00:00"
+      }
     ],
-    "updated": "2026-11-01T22:23:13.386263+00:00"
+    "gaps": [],
+    "updated": "2026-11-01T22:23:16.297627+00:00",
+    "last_run": {
+      "id": "ccbf0672a4be41d7b8c69364d2b6216c",
+      "operation": "verify-git",
+      "started_at": "2026-11-01T22:23:15.750422+00:00",
+      "status": "succeeded",
+      "finished_at": "2026-11-01T22:23:16.298766+00:00",
+      "files": 44
+    },
+    "last_successful_run": {
+      "id": "ccbf0672a4be41d7b8c69364d2b6216c",
+      "operation": "verify-git",
+      "started_at": "2026-11-01T22:23:15.750422+00:00",
+      "status": "succeeded",
+      "finished_at": "2026-11-01T22:23:16.298766+00:00",
+      "files": 44
+    },
+    "last_successful_scan": {
+      "id": "e5ef345379814085b415ef30cc71c3b6",
+      "operation": "audit",
+      "started_at": "2026-11-01T22:23:15.713088+00:00",
+      "status": "succeeded",
+      "finished_at": "2026-11-01T22:23:15.723349+00:00",
+      "changes": {
+        "new": 44,
+        "modified": 0,
+        "unchanged": 0,
+        "removed": 0,
+        "no-longer-scanned": 0,
+        "unsupported": 0
+      },
+      "git_discovery": {
+        "status": "cross-checked",
+        "tracked_count": 45,
+        "untracked_count": 0,
+        "ignored_candidates_count": 0,
+        "newly_ignored_candidates_count": 0,
+        "not_scanned_tracked_or_untracked_count": 0,
+        "ignored_candidates_excluded_from_scan_count": 0,
+        "ignore_source_changes_count": 0
+      }
+    },
+    "last_verified_backup_run": {
+      "id": "ccbf0672a4be41d7b8c69364d2b6216c",
+      "operation": "verify-git",
+      "started_at": "2026-11-01T22:23:15.750422+00:00",
+      "status": "succeeded",
+      "finished_at": "2026-11-01T22:23:16.298766+00:00",
+      "files": 44
+    },
+    "recovery": {
+      "version": 2,
+      "procedure_reference": "https://github.com/boonkgim/backup-project/blob/789f5d72e12066c6d4c873fa45591ef91d6b5f7f/SKILL.md",
+      "scope": {
+        "kind": "project",
+        "assurance": "backup",
+        "categories": [
+          "source",
+          "bootstrap"
+        ],
+        "description": "Current checkout source and local project records on main; reviewed pending source snapshots explicitly included where recorded. Other worktrees, global credentials, Git internals and infrastructure DR are outside scope.",
+        "environments": [
+          "local skill repository"
+        ],
+        "confirmed_by": "Boon backup request 2026-11-02",
+        "confirmed_at": "2026-11-01T22:23:16.306243+00:00"
+      },
+      "start_here": {
+        "reference": "https://github.com/boonkgim/setup-project/blob/bfb36ba236c943f6664bc9734b69dd7d6b323bd0/AGENTS.md",
+        "verified_at": "2026-11-01T22:23:16.306252+00:00"
+      },
+      "latest_inventory": {
+        "reference": "https://github.com/boonkgim/setup-project/blob/main/backup-inventory.json",
+        "verified_at": "2026-11-01T22:23:16.306253+00:00"
+      },
+      "components": [
+        {
+          "id": "current-source",
+          "label": "Current skill source and project records",
+          "category": "source",
+          "required": true,
+          "owner": "Repository owner",
+          "authoritative_source": "https://github.com/boonkgim/setup-project/tree/bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+          "backup": {
+            "state": "verified",
+            "reference": "https://github.com/boonkgim/setup-project/tree/bfb36ba236c943f6664bc9734b69dd7d6b323bd0",
+            "version": "ca5a5a22f829c96761265496ad49fce5e7f85972c226a5508a5871f66d7c8dc2",
+            "verified_at": "2026-11-01T22:23:16.306255+00:00"
+          },
+          "restore": {
+            "state": "untested",
+            "method": "Fetch the recorded Git commit through authorised repository access; use the project bootstrap and retained inventory. No service restore is claimed."
+          },
+          "freshness": {
+            "state": "current",
+            "checked_at": "2026-11-01T22:23:16.306257+00:00",
+            "current_version": "ca5a5a22f829c96761265496ad49fce5e7f85972c226a5508a5871f66d7c8dc2",
+            "max_age_hours": null
+          },
+          "blocker": "",
+          "next_action": "Reverify after source changes."
+        },
+        {
+          "id": "fresh-clone-bootstrap",
+          "label": "Shared SOP installation and local coverage discovery",
+          "category": "bootstrap",
+          "required": true,
+          "owner": "Repository owner",
+          "authoritative_source": "https://github.com/boonkgim/setup-project/blob/bfb36ba236c943f6664bc9734b69dd7d6b323bd0/AGENTS.md",
+          "backup": {
+            "state": "verified",
+            "reference": "https://github.com/boonkgim/setup-project/blob/bfb36ba236c943f6664bc9734b69dd7d6b323bd0/AGENTS.md",
+            "version": "6a2d4f07bbad3caa7f27b238fa0ac7a0ca7c10eb6aeee8d2082d74021a59ceef",
+            "verified_at": "2026-11-01T22:23:16.306269+00:00"
+          },
+          "restore": {
+            "state": "untested",
+            "method": "Fetch the recorded Git commit through authorised repository access; use the project bootstrap and retained inventory. No service restore is claimed."
+          },
+          "freshness": {
+            "state": "current",
+            "checked_at": "2026-11-01T22:23:16.306270+00:00",
+            "current_version": "6a2d4f07bbad3caa7f27b238fa0ac7a0ca7c10eb6aeee8d2082d74021a59ceef",
+            "max_age_hours": null
+          },
+          "blocker": "",
+          "next_action": "Reverify after source changes."
+        }
+      ]
+    },
+    "assessment": {
+      "checked_at": "2026-11-01T22:23:16.306272+00:00",
+      "audience": "public",
+      "payload_files": 42,
+      "payload_bytes": 856677,
+      "secret_payloads_found": 0,
+      "drive_payloads_required": 0,
+      "assurance": "ordinary backup; restoration and global account-loss recovery not tested",
+      "git_runtime_review": "Only standard Git internals and filter-repo conversion metadata where present; no application runtime/database found. Preserved and excluded from current-folder claim.",
+      "pending_snapshot_branch": null
+    }
   }
 }
